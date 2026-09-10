@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920,height=1080,initial-scale=1">
+<title>ScamShield AI — Hackathon Demo Video</title>
+<style>
+/* ─── Reset & Base ─── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{
+  --cyan:#22d3ee;--cyan-dim:rgba(34,211,238,.15);
+  --violet:#a78bfa;--violet-dim:rgba(167,139,250,.15);
+  --red:#ef4444;--red-dim:rgba(239,68,68,.12);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.12);
+  --orange:#f97316;--yellow:#eab308;
+  --bg:#060a13;--surface:#0c1220;--surface2:#111827;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --glass:rgba(255,255,255,.04);--glass-border:rgba(255,255,255,.08);
+  --glow:0 0 40px rgba(34,211,238,.15);
+}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif}
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:none}
+.scene.active{opacity:1;pointer-events:auto}
+
+/* ─── Typography ─── */
+.font-display{font-family:'Space Grotesk','Inter',sans-serif}
+.font-mono{font-family:'JetBrains Mono',monospace}
+
+/* ─── Animations ─── */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes slideUp{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(80px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-80px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes scaleUp{from{transform:scale(1)}to{transform:scale(1.08)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes scanLine{0%{top:-2px}100%{top:100%}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(34,211,238,.2)}50%{box-shadow:0 0 40px rgba(34,211,238,.4)}}
+@keyframes typewriter{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{border-color:var(--cyan)}50%{border-color:transparent}}
+@keyframes ringFill{from{stroke-dashoffset:283}to{stroke-dashoffset:var(--target)}}
+@keyframes barGrow{from{width:0}to{width:var(--w)}}
+@keyframes counterUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes rotateSlow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ripple{0%{transform:scale(0);opacity:.6}100%{transform:scale(4);opacity:0}}
+@keyframes radarPulse{0%{r:0;opacity:.5}100%{r:120;opacity:0}}
+@keyframes textReveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes shimmerText{0%{background-position:-200% center}100%{background-position:200% center}}
+
+.animate-delay-1{animation-delay:.1s!important}
+.animate-delay-2{animation-delay:.2s!important}
+.animate-delay-3{animation-delay:.3s!important}
+.animate-delay-4{animation-delay:.4s!important}
+.animate-delay-5{animation-delay:.5s!important}
+.animate-delay-6{animation-delay:.6s!important}
+.animate-delay-7{animation-delay:.7s!important}
+.animate-delay-8{animation-delay:.8s!important}
+.animate-delay-9{animation-delay:.9s!important}
+.animate-delay-10{animation-delay:1s!important}
+.animate-delay-12{animation-delay:1.2s!important}
+.animate-delay-15{animation-delay:1.5s!important}
+.animate-delay-20{animation-delay:2s!important}
+.animate-delay-25{animation-delay:2.5s!important}
+
+/* ─── Shared UI Pieces ─── */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.badge-cyan{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(34,211,238,.25)}
+.badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.badge-violet{background:var(--violet-dim);color:var(--violet);border:1px solid rgba(167,139,250,.25)}
+.badge-yellow{background:rgba(234,179,8,.1);color:var(--yellow);border:1px solid rgba(234,179,8,.25)}
+
+.glass-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;backdrop-filter:blur(20px)}
+
+.text-gradient{background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ─── Grid Background ─── */
+.bg-grid{background-image:
+  linear-gradient(rgba(34,211,238,.03) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(34,211,238,.03) 1px,transparent 1px);
+  background-size:60px 60px}
+
+/* ═══════════════════════════════════════
+   SCENE 1 — HOOK (0–8s)
+   ═══════════════════════════════════════ */
+#scene1{background:radial-gradient(ellipse at 50% 40%,rgba(34,211,238,.06) 0%,transparent 60%),var(--bg)}
+#scene1 .shield-glow{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.12) 0%,transparent 70%);animation:rotateSlow 20s linear infinite}
+#scene1 .logo-reveal{opacity:0;animation:scaleIn .8s ease-out .3s forwards}
+#scene1 .tagline{opacity:0;animation:slideUp .8s ease-out .9s forwards}
+#scene1 .subtitle{opacity:0;animation:slideUp .7s ease-out 1.5s forwards}
+#scene1 .stats-row{opacity:0;animation:slideUp .7s ease-out 2.0s forwards}
+
+/* Shield SVG */
+.shield-icon{width:120px;height:120px;filter:drop-shadow(0 0 30px rgba(34,211,238,.4))}
+
+/* ═══════════════════════════════════════
+   SCENE 2 — THE PROBLEM (8–15s)
+   ═══════════════════════════════════════ */
+#scene2{background:linear-gradient(180deg,#0a0e1a 0%,#110816 50%,#0a0e1a 100%)}
+.problem-title{opacity:0;animation:slideUp .7s ease-out .2s forwards}
+.scam-message{opacity:0;animation:slideRight .6s ease-out .5s forwards}
+.scam-stats{opacity:0;animation:slideUp .6s ease-out .8s forwards}
+.problem-callout{opacity:0;animation:scaleIn .7s ease-out 1.2s forwards}
+
+/* Floating scam messages */
+.floating-msg{position:absolute;padding:14px 22px;border-radius:14px;font-size:13px;line-height:1.5;max-width:340px;border:1px solid var(--glass-border);background:rgba(15,20,35,.9);backdrop-filter:blur(10px);opacity:0;pointer-events:none}
+.floating-msg .sender{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:4px}
+.floating-msg .body{color:var(--text2);font-size:12.5px}
+.floating-msg .link{color:var(--red);font-weight:600}
+
+/* ═══════════════════════════════════════
+   SCENE 3 — THE SOLUTION (15–25s)
+   ═══════════════════════════════════════ */
+#scene3{background:radial-gradient(ellipse at 30% 50%,rgba(34,211,238,.04) 0%,transparent 50%),var(--bg)}
+.solution-badge{opacity:0;animation:scaleIn .5s ease-out .2s forwards}
+.solution-title{opacity:0;animation:slideUp .7s ease-out .4s forwards}
+.solution-desc{opacity:0;animation:slideUp .6s ease-out .7s forwards}
+.app-mockup{opacity:0;animation:scaleIn .8s ease-out .5s forwards}
+
+/* App window chrome */
+.app-window{border-radius:16px;border:1px solid var(--glass-border);background:var(--surface);overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.5),0 0 60px rgba(34,211,238,.08)}
+.app-titlebar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--glass-border)}
+.app-dot{width:10px;height:10px;border-radius:50%}
+.app-dot.r{background:#ef4444}.app-dot.y{background:#eab308}.app-dot.g{background:#22c55e}
+.app-url{margin-left:16px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);background:rgba(255,255,255,.05);padding:4px 12px;border-radius:6px}
+
+/* ═══════════════════════════════════════
+   SCENE 4 — CORE FEATURES (25–55s)
+   ═══════════════════════════════════════ */
+#scene4{background:var(--bg)}
+
+.feature-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0}
+.feature-stage.active{opacity:1;transition:opacity .5s ease}
+
+.feature-label{position:absolute;top:60px;left:50%;transform:translateX(-50%)}
+.feature-label .text{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);text-align:center}
+
+/* Workspace mockup */
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:32px;width:1400px}
+.workspace-input{padding:24px}
+.workspace-preview{padding:24px}
+
+/* Textarea mockup */
+.mock-textarea{width:100%;height:180px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(0,0,0,.4);padding:16px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--red);line-height:1.6;resize:none;position:relative;overflow:hidden}
+.mock-textarea .cursor{display:inline-block;width:2px;height:16px;background:var(--cyan);animation:blink 1s step-end infinite;vertical-align:text-bottom}
+
+/* Scan overlay */
+.scan-overlay{position:absolute;inset:0;background:rgba(6,10,19,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;border-radius:12px;z-index:10}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scanLine 1.5s linear infinite}
+.scan-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);text-align:left;width:360px}
+.scan-text .line{opacity:0;transform:translateX(-10px);margin:6px 0}
+.scan-text .line.show{opacity:1;transform:translateX(0);transition:all .3s ease}
+.scan-text .check{color:var(--green)}
+.scan-text .arrow{color:var(--text3);margin-right:8px}
+
+/* Score ring */
+.score-ring-wrap{position:relative;width:180px;height:180px}
+.score-ring-wrap svg{transform:rotate(-90deg)}
+.score-ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:10}
+.score-ring-fg{fill:none;stroke:var(--red);stroke-width:10;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 2s ease-out}
+.score-value{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-number{font-family:'Space Grotesk',sans-serif;font-size:52px;font-weight:800;color:var(--red)}
+.score-label{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--red);opacity:.8}
+
+/* Radar chart mockup */
+.radar-wrap{width:240px;height:240px;position:relative}
+.radar-bg{position:absolute;inset:0}
+.radar-bg circle{fill:none;stroke:rgba(255,255,255,.06);stroke-width:1}
+
+/* Dimension bars */
+.dim-bar{margin:8px 0}
+.dim-bar .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px}
+.dim-bar .track{height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.dim-bar .fill{height:100%;border-radius:3px;width:0;transition:width 1.5s ease-out}
+
+/* Reason cards */
+.reason-card{display:flex;gap:12px;padding:12px 16px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass);margin:8px 0;opacity:0;transform:translateX(-20px);transition:all .4s ease}
+.reason-card.show{opacity:1;transform:translateX(0)}
+.reason-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.reason-num.high{background:var(--red-dim);color:var(--red)}
+.reason-num.med{background:rgba(249,115,22,.12);color:var(--orange)}
+.reason-content .title{font-size:13px;font-weight:600;color:var(--text)}
+.reason-content .contrib{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.reason-content .contrib.high{color:var(--red)}
+.reason-content .contrib.med{color:var(--orange)}
+.reason-content .desc{font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.4}
+
+/* Attack chain */
+.attack-chain{display:flex;flex-direction:column;gap:0;padding:0 16px}
+.attack-step{display:flex;gap:14px;opacity:0;transform:translateY(15px);transition:all .4s ease}
+.attack-step.show{opacity:1;transform:translateY(0)}
+.attack-dot-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.attack-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--red);background:var(--bg);flex-shrink:0}
+.attack-dot.active{background:var(--red);box-shadow:0 0 12px rgba(239,68,68,.4)}
+.attack-line{width:2px;flex:1;min-height:20px;background:linear-gradient(180deg,var(--red),rgba(239,68,68,.2))}
+.attack-step:last-child .attack-line{display:none}
+.attack-content{padding-bottom:16px}
+.attack-content .title{font-size:12.5px;font-weight:600;color:var(--text)}
+.attack-content .desc{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+
+/* ═══════════════════════════════════════
+   SCENE 5 — WOW MOMENT (55–70s)
+   ═══════════════════════════════════════ */
+#scene5{background:radial-gradient(ellipse at 50% 50%,rgba(239,68,68,.04) 0%,transparent 50%),var(--bg)}
+
+.wow-score-wrap{position:relative}
+.wow-glow{position:absolute;inset:-40px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.15) 0%,transparent 70%);animation:pulse 2s ease-in-out infinite}
+
+/* ═══════════════════════════════════════
+   SCENE 6 — TECHNICAL IMPACT (70–82s)
+   ═══════════════════════════════════════ */
+#scene6{background:var(--bg)}
+
+.tech-card{padding:24px;border-radius:16px;border:1px solid var(--glass-border);background:var(--glass);opacity:0;transform:scale(.9);transition:all .5s ease}
+.tech-card.show{opacity:1;transform:scale(1)}
+.tech-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.tech-card .title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.tech-card .desc{font-size:12px;color:var(--text3);line-height:1.5}
+
+/* Dashboard chart mockups */
+.mini-chart{height:80px;display:flex;align-items:flex-end;gap:4px;padding-top:8px}
+.mini-bar{flex:1;border-radius:3px 3px 0 0;background:var(--cyan);opacity:.6;transition:height 1s ease-out,opacity .3s ease}
+.mini-bar:nth-child(even){opacity:.4}
+.mini-bar:nth-child(3n){background:var(--violet)}
+
+/* Progress ring mini */
+.mini-ring{width:60px;height:60px}
+.mini-ring svg{transform:rotate(-90deg)}
+
+/* ═══════════════════════════════════════
+   SCENE 7 — FINAL HERO SHOT (82–90s)
+   ═══════════════════════════════════════ */
+#scene7{background:radial-gradient(ellipse at 50% 45%,rgba(34,211,238,.06) 0%,transparent 50%),var(--bg)}
+
+.hero-logo{opacity:0;animation:scaleIn .8s ease-out .2s forwards}
+.hero-tagline{opacity:0;animation:slideUp .8s ease-out .6s forwards}
+.hero-cta{opacity:0;animation:slideUp .7s ease-out 1.2s forwards}
+.hero-footer{opacity:0;animation:fadeIn 1s ease-out 1.8s forwards}
+
+/* Particles */
+.particle{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--cyan);opacity:.3;animation:floatY 4s ease-in-out infinite}
+
+/* Scene progress bar */
+.progress-bar{position:fixed;bottom:0;left:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--violet));z-index:9999;transition:width .1s linear}
+
+/* Controls overlay */
+.controls{position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;gap:8px;opacity:0;transition:opacity .3s ease}
+.controls.visible{opacity:1}
+.controls button{padding:8px 16px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(12,18,32,.9);color:var(--text2);font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s ease}
+.controls button:hover{background:rgba(34,211,238,.1);border-color:var(--cyan);color:var(--cyan)}
+.controls button.active{background:rgba(34,211,238,.15);border-color:var(--cyan);color:var(--cyan)}
+
+/* Scene counter */
+.scene-counter{position:fixed;top:20px;right:20px;z-index:10000;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);opacity:0;transition:opacity .3s ease}
+.scene-counter.visible{opacity:1}
+</style>
+</head>
+<body class="bg-grid">
+
+<!-- ═══ Progress Bar ═══ -->
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+<!-- ═══ Scene Counter ═══ -->
+<div class="scene-counter" id="sceneCounter">SCENE 1 / 7</div>
+
+<!-- ═══ Controls ═══ -->
+<div class="controls" id="controls">
+  <button onclick="togglePlay()" id="playBtn">⏸ Pause</button>
+  <button onclick="restart()">↻ Restart</button>
+  <button onclick="skipToScene(currentScene+1)">→ Next</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 1 — HOOK | 0–8s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene1">
+  <div class="shield-glow" style="top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+  <!-- Floating particles -->
+  <div class="particle" style="top:15%;left:20%;animation-delay:0s"></div>
+  <div class="particle" style="top:25%;left:75%;animation-delay:.7s"></div>
+  <div class="particle" style="top:60%;left:85%;animation-delay:1.4s"></div>
+  <div class="particle" style="top:70%;left:12%;animation-delay:2.1s"></div>
+  <div class="particle" style="top:40%;left:60%;animation-delay:.3s;width:2px;height:2px"></div>
+  <div class="particle" style="top:80%;left:45%;animation-delay:1s;width:2px;height:2px"></div>
+
+  <div style="text-align:center;position:relative;z-index:2">
+    <!-- Shield icon -->
+    <div class="logo-reveal" style="display:flex;justify-content:center;margin-bottom:32px">
+      <svg class="shield-icon" viewBox="0 0 100 120" fill="none">
+        <defs>
+          <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+        <path d="M50 8 L92 28 L92 58 C92 82 72 102 50 112 C28 102 8 82 8 58 L8 28 Z" stroke="url(#shieldGrad)" stroke-width="3" fill="rgba(34,211,238,.06)"/>
+        <path d="M50 24 L76 38 L76 56 C76 74 62 88 50 96 C38 88 24 74 24 56 L24 38 Z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="rgba(34,211,238,.03)"/>
+        <path d="M38 58 L46 66 L64 48" stroke="url(#shieldGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Brand name -->
+    <div class="logo-reveal" style="animation-delay:.4s">
+      <span class="font-display" style="font-size:56px;font-weight:800;letter-spacing:-.02em;color:var(--text)">SCAMSHIELD</span>
+      <span class="font-display text-gradient" style="font-size:56px;font-weight:800;letter-spacing:-.02em"> AI</span>
+    </div>
+
+    <!-- Tagline -->
+    <div class="tagline" style="margin-top:28px">
+      <h1 class="font-display" style="font-size:42px;font-weight:700;line-height:1.15">
+        See the scam<br>
+        <span class="text-gradient">before it sees you.</span>
+      </h1>
+    </div>
+
+    <!-- Subtitle -->
+    <div class="subtitle" style="margin-top:24px">
+      <p style="font-size:18px;color:var(--text2);max-width:600px;margin:0 auto;line-height:1.6">
+        AI-powered scam intelligence that turns suspicious messages into<br>understandable threat reports — with evidence, not accusations.
+      </p>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row" style="margin-top:48px;display:flex;justify-content:center;gap:64px">
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:36px;font-weight:800;color:var(--cyan)">56+</div>
+        <div class="font-mono" style="font-size:10px;letter-spacing:.2em;color:var(--text3);margin-top:4px;text-transform:uppercase">Detection Patterns</div>
+      </div>
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:36px;font-weight:800;color:var(--violet)">4</div>
+        <div class="font-mono" style="font-size:10px;letter-spacing:.2em;color:var(--text3);margin-top:4px;text-transform:uppercase">Input Formats</div>
+      </div>
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:36px;font-weight:800;color:var(--green)">100%</div>
+        <div class="font-mono" style="font-size:10px;letter-spacing:.2em;color:var(--text3);margin-top:4px;text-transform:uppercase">Privacy-First</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 2 — THE PROBLEM | 8–15s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene2">
+  <div style="position:absolute;inset:0;overflow:hidden">
+    <!-- Floating scam messages -->
+    <div class="floating-msg" id="fmsg1" style="top:8%;left:5%;animation-delay:.4s">
+      <div class="sender">📱 SMS</div>
+      <div class="body">Congratulations! You won <span style="color:var(--orange);font-weight:700">Rs. 50,000</span>. Claim now: <span class="link">festive-win2026.xyz</span></div>
+    </div>
+    <div class="floating-msg" id="fmsg2" style="top:12%;right:8%;animation-delay:.8s">
+      <div class="sender">💼 WHATSAPP</div>
+      <div class="body">URGENT! Work from home, earn <span style="color:var(--orange);font-weight:700">Rs. 2,000/day</span>. No experience. Pay Rs. 999 to confirm.</div>
+    </div>
+    <div class="floating-msg" id="fmsg3" style="bottom:22%;left:8%;animation-delay:1.2s">
+      <div class="sender">🏦 EMAIL</div>
+      <div class="body">Your SBI account will be <span style="color:var(--red);font-weight:700">BLOCKED</span> within 24 hours. Verify now: <span class="link">sbi-online-verify.xyz</span></div>
+    </div>
+    <div class="floating-msg" id="fmsg4" style="bottom:18%;right:5%;animation-delay:1.6s">
+      <div class="sender">📦 SMS</div>
+      <div class="body">Your Amazon parcel is pending. Pay customs fee of <span style="color:var(--orange);font-weight:700">Rs. 450</span> to release.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;position:relative;z-index:10">
+    <div class="problem-title">
+      <div class="badge badge-red" style="margin:0 auto 24px;width:fit-content">
+        <span style="font-size:14px">⚠</span> THE PROBLEM
+      </div>
+      <h2 class="font-display" style="font-size:48px;font-weight:800;line-height:1.15">
+        Millions receive scam messages<br>
+        <span style="color:var(--red)">every single day.</span>
+      </h2>
+    </div>
+
+    <div class="scam-stats" style="margin-top:48px;display:flex;justify-content:center;gap:80px">
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:52px;font-weight:800;color:var(--red)">2.6B</div>
+        <div class="font-mono" style="font-size:11px;letter-spacing:.15em;color:var(--text3);margin-top:6px;text-transform:uppercase">Spam messages daily</div>
+      </div>
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:52px;font-weight:800;color:var(--orange)">$50B</div>
+        <div class="font-mono" style="font-size:11px;letter-spacing:.15em;color:var(--text3);margin-top:6px;text-transform:uppercase">Lost to scams yearly</div>
+      </div>
+      <div style="text-align:center">
+        <div class="font-display" style="font-size:52px;font-weight:800;color:var(--yellow)">91%</div>
+        <div class="font-mono" style="font-size:11px;letter-spacing:.15em;color:var(--text3);margin-top:6px;text-transform:uppercase">Start with a message</div>
+      </div>
+    </div>
+
+    <div class="problem-callout" style="margin-top:48px">
+      <p class="font-display" style="font-size:22px;color:var(--text2);font-weight:500">
+        Existing spam filters say <em>"likely spam"</em> but <span style="color:var(--text);font-weight:700">never explain why.</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 3 — THE SOLUTION | 15–25s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene3">
+  <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:80px;align-items:center;padding:0 120px;width:100%;max-width:1800px">
+    <!-- Left: Text -->
+    <div>
+      <div class="solution-badge">
+        <div class="badge badge-cyan" style="margin-bottom:20px">
+          <span style="font-size:13px">✦</span> THE SOLUTION
+        </div>
+      </div>
+      <div class="solution-title">
+        <h2 class="font-display" style="font-size:44px;font-weight:800;line-height:1.15;color:var(--text)">
+          Meet <span class="text-gradient">ScamShield AI</span>
+        </h2>
+      </div>
+      <div class="solution-desc" style="margin-top:20px">
+        <p style="font-size:17px;color:var(--text2);line-height:1.7">
+          Paste a suspicious message, upload a screenshot, or drop a link — and get a full threat report with:
+        </p>
+      </div>
+      <div class="solution-desc" style="margin-top:24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--red-dim);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎯</div>
+          <span style="font-size:15px;color:var(--text2)"><strong style="color:var(--text)">Risk score</strong> with threat classification</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--cyan-dim);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔍</div>
+          <span style="font-size:15px;color:var(--text2)"><strong style="color:var(--text)">Evidence-based reasoning</strong> you can verify</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--violet-dim);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⛓️</div>
+          <span style="font-size:15px;color:var(--text2)"><strong style="color:var(--text)">Attack-chain simulation</strong> — what happens next</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🛡️</div>
+          <span style="font-size:15px;color:var(--text2)"><strong style="color:var(--text)">Safe reply generator</strong> — decline without risk</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: App Mockup -->
+    <div class="app-mockup">
+      <div class="app-window" style="width:100%">
+        <div class="app-titlebar">
+          <div class="app-dot r"></div>
+          <div class="app-dot y"></div>
+          <div class="app-dot g"></div>
+          <div class="app-url">localhost:5173</div>
+        </div>
+        <!-- Landing page mini-mockup -->
+        <div style="padding:32px;text-align:center;min-height:420px;background:linear-gradient(180deg,rgba(6,10,19,.8),rgba(12,18,32,.9));position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(34,211,238,.05) 0%,transparent 60%)"></div>
+          <!-- Nav -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:40px;position:relative;z-index:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg width="24" height="28" viewBox="0 0 100 120" fill="none"><path d="M50 8 L92 28 L92 58 C92 82 72 102 50 112 C28 102 8 82 8 58 L8 28 Z" stroke="#22d3ee" stroke-width="4" fill="rgba(34,211,238,.08)"/><path d="M38 58 L46 66 L64 48" stroke="#22d3ee" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="font-display" style="font-size:14px;font-weight:700;color:var(--text)">SCAMSHIELD <span style="color:var(--cyan)">AI</span></span>
+            </div>
+            <div class="badge badge-green" style="font-size:9px;padding:4px 10px">Demo Mode</div>
+          </div>
+          <!-- Hero -->
+          <div style="position:relative;z-index:1">
+            <div class="badge badge-cyan" style="font-size:9px;margin-bottom:16px;padding:5px 12px">AI-POWERED SCAM INTELLIGENCE</div>
+            <h3 class="font-display" style="font-size:32px;font-weight:800;line-height:1.15;color:var(--text)">
+              See the scam<br><span class="text-gradient">before it sees you.</span>
+            </h3>
+            <p style="font-size:13px;color:var(--text3);margin-top:12px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.5">
+              Paste a suspicious message, upload a screenshot, or drop a link.
+            </p>
+            <div style="margin-top:24px;display:flex;gap:12px;justify-content:center">
+              <div style="padding:10px 24px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#22d3ee);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#060a13">GET STARTED — FREE</div>
+              <div style="padding:10px 24px;border-radius:999px;border:1px solid var(--glass-border);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text2)">SIGN IN</div>
+            </div>
+          </div>
+          <!-- Stats -->
+          <div style="display:flex;justify-content:center;gap:40px;margin-top:32px;position:relative;z-index:1">
+            <div style="text-align:center"><div class="font-display" style="font-size:20px;font-weight:800;color:var(--text)">12,840</div><div class="font-mono" style="font-size:8px;letter-spacing:.15em;color:var(--text3)">ANALYZED*</div></div>
+            <div style="text-align:center"><div class="font-display" style="font-size:20px;font-weight:800;color:var(--text)">4,317</div><div class="font-mono" style="font-size:8px;letter-spacing:.15em;color:var(--text3)">THREATS*</div></div>
+            <div style="text-align:center"><div class="font-display" style="font-size:20px;font-weight:800;color:var(--text)">56</div><div class="font-mono" style="font-size:8px;letter-spacing:.15em;color:var(--text3)">PATTERNS</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 4 — CORE FEATURES | 25–55s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene4">
+  <!-- Feature A: Paste & Analyze (25–32s) -->
+  <div class="feature-stage" id="featA">
+    <div class="feature-label"><div class="text">MULTI-FORMAT ANALYSIS</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:100px 100px 60px;width:100%;max-width:1700px;align-items:start">
+      <!-- Input side -->
+      <div class="glass-card" style="padding:28px">
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <div class="badge badge-cyan" style="font-size:10px">PASTE TEXT</div>
+          <div class="badge" style="background:var(--glass);border:1px solid var(--glass-border);color:var(--text3);font-size:10px">UPLOAD SCREENSHOT</div>
+          <div class="badge" style="background:var(--glass);border:1px solid var(--glass-border);color:var(--text3);font-size:10px">ANALYZE URL</div>
+          <div class="badge" style="background:var(--glass);border:1px solid var(--glass-border);color:var(--text3);font-size:10px">DEMO SCENARIOS</div>
+        </div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">SUSPICIOUS MESSAGE, EMAIL, OFFER, OR SMS</div>
+        <div class="mock-textarea" style="position:relative" id="typewriterTarget">
+          <span id="typedText"></span><span class="cursor"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+          <div style="font-size:10px;color:var(--text3)"><span id="charCount">0</span> characters</div>
+          <div style="padding:8px 20px;border-radius:999px;background:linear-gradient(135deg,#0891b2,#22d3ee);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#060a13;display:flex;align-items:center;gap:6px">✨ ANALYZE TEXT</div>
+        </div>
+      </div>
+      <!-- Preview side -->
+      <div class="glass-card" style="padding:28px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="badge badge-violet" style="font-size:10px">PREVIEW</div>
+          <div class="badge badge-yellow" style="font-size:10px" id="analyzingBadge">Analyzing live…</div>
+        </div>
+        <pre style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);line-height:1.6;padding:16px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(0,0,0,.3);max-height:200px;overflow:auto;white-space:pre-wrap" id="previewText"></pre>
+        <div style="margin-top:16px;padding:16px;border-radius:12px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.05)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="color:var(--red);font-size:14px">🛡️</span>
+            <span style="font-size:12px;font-weight:600;color:var(--text)">Confidential by design</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.5">Content is processed for analysis only. Raw messages are never stored.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature B: Scan Animation (32–39s) -->
+  <div class="feature-stage" id="featB">
+    <div class="feature-label"><div class="text">LIVE THREAT SCANNING</div></div>
+    <div style="width:700px;margin-top:20px">
+      <div class="glass-card" style="padding:40px;position:relative;overflow:hidden;min-height:400px">
+        <!-- Scan line -->
+        <div class="scan-line" id="scanLine" style="display:none"></div>
+        <!-- Scan overlay content -->
+        <div style="text-align:center;margin-bottom:32px">
+          <div class="badge badge-cyan" style="margin:0 auto">SECURE CHANNEL — LOCAL ANALYSIS</div>
+        </div>
+        <div class="scan-text" id="scanLines">
+          <div class="line" id="sl1"><span class="arrow">&gt;</span>Initializing threat-scan kernel... <span class="check">OK</span></div>
+          <div class="line" id="sl2"><span class="arrow">&gt;</span>Extracting linguistic signals from payload...</div>
+          <div class="line" id="sl3"><span class="arrow">&gt;</span>Evaluating phrases, tone and structure...</div>
+          <div class="line" id="sl4"><span class="arrow">&gt;</span>Resolving referenced destinations &amp; structural checks...</div>
+          <div class="line" id="sl5"><span class="arrow">&gt;</span>Cross-matching manipulation tactics...</div>
+          <div class="line" id="sl6"><span class="arrow">&gt;</span> <span class="check">Scan complete. Reasoning assembled.</span></div>
+        </div>
+        <div style="text-align:center;margin-top:32px;opacity:0" id="scanResult">
+          <div class="badge badge-red" style="font-size:13px;padding:10px 24px;margin:0 auto">THREAT ASSESSMENT COMPLETE</div>
+          <div style="margin-top:16px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--red)">
+            Threat detected — <span style="font-size:32px">93</span> / 100 · CRITICAL
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature C: Threat Report (39–47s) -->
+  <div class="feature-stage" id="featC">
+    <div class="feature-label"><div class="text">EXPLAINABLE THREAT REPORT</div></div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:24px;padding:100px 80px 60px;width:100%;max-width:1700px;align-items:start">
+      <!-- Score panel -->
+      <div class="glass-card" style="padding:28px;text-align:center;width:240px">
+        <div class="score-ring-wrap" style="margin:0 auto">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <circle class="score-ring-bg" cx="90" cy="90" r="80"/>
+            <circle class="score-ring-fg" cx="90" cy="90" r="80" id="scoreRingFg" style="--target:28"/>
+          </svg>
+          <div class="score-value">
+            <div class="score-number" id="scoreDisplay">0</div>
+            <div class="score-label">CRITICAL</div>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="badge badge-red" style="font-size:10px">FAKE PRIZE</div>
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text3)">Confidence: MODERATE · 76/100</div>
+        <!-- Dimension bars -->
+        <div style="margin-top:20px;text-align:left">
+          <div class="dim-bar">
+            <div class="label"><span>Social Engineering</span><span style="color:var(--orange)">55</span></div>
+            <div class="track"><div class="fill" style="background:var(--orange);--w:55%"></div></div>
+          </div>
+          <div class="dim-bar">
+            <div class="label"><span>Link Risk</span><span style="color:var(--red)">82</span></div>
+            <div class="track"><div class="fill" style="background:var(--red);--w:82%"></div></div>
+          </div>
+          <div class="dim-bar">
+            <div class="label"><span>Urgency</span><span style="color:var(--red)">78</span></div>
+            <div class="track"><div class="fill" style="background:var(--red);--w:78%"></div></div>
+          </div>
+          <div class="dim-bar">
+            <div class="label"><span>Financial Risk</span><span style="color:var(--orange)">60</span></div>
+            <div class="track"><div class="fill" style="background:var(--orange);--w:60%"></div></div>
+          </div>
+          <div class="dim-bar">
+            <div class="label"><span>Credential Risk</span><span style="color:var(--yellow)">35</span></div>
+            <div class="track"><div class="fill" style="background:var(--yellow);--w:35%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reasons -->
+      <div>
+        <div class="glass-card" style="padding:24px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <span style="color:var(--cyan);font-size:16px">⚡</span>
+            <span class="font-mono" style="font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text3)">WHY THIS WAS FLAGGED</span>
+          </div>
+          <div class="reason-card show" style="transition-delay:.2s">
+            <div class="reason-num high">1</div>
+            <div class="reason-content">
+              <div class="title">Reward Bait</div>
+              <div class="contrib high">CONTRIBUTION: HIGH</div>
+              <div class="desc">Message promises a cash prize to lure engagement — a classic fake prize pattern.</div>
+            </div>
+          </div>
+          <div class="reason-card show" style="transition-delay:.5s">
+            <div class="reason-num high">2</div>
+            <div class="reason-content">
+              <div class="title">Urgency Pressure</div>
+              <div class="contrib high">CONTRIBUTION: HIGH</div>
+              <div class="desc">"Claim immediately", "Hurry!", "expires tonight" — manufactured time pressure.</div>
+            </div>
+          </div>
+          <div class="reason-card show" style="transition-delay:.8s">
+            <div class="reason-num med">3</div>
+            <div class="reason-content">
+              <div class="title">Suspicious URL Domain</div>
+              <div class="contrib med">CONTRIBUTION: MEDIUM</div>
+              <div class="desc">festive-win2026.xyz uses a free TLD and keyword stuffing — not a legitimate domain.</div>
+            </div>
+          </div>
+          <div class="reason-card show" style="transition-delay:1.1s">
+            <div class="reason-num med">4</div>
+            <div class="reason-content">
+              <div class="title">Financial Request</div>
+              <div class="contrib med">CONTRIBUTION: MEDIUM</div>
+              <div class="desc">"Processing fee" is a classic advance-fee scam indicator. Legitimate prizes never charge fees.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attack chain -->
+      <div>
+        <div class="glass-card" style="padding:24px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <span style="font-size:16px">⛓️</span>
+            <span class="font-mono" style="font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text3)">WHAT COULD HAPPEN NEXT?</span>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:14px">A defensive escalation simulation</div>
+          <div class="attack-chain">
+            <div class="attack-step show" style="transition-delay:.3s">
+              <div class="attack-dot-col"><div class="attack-dot active"></div><div class="attack-line"></div></div>
+              <div class="attack-content"><div class="title">Suspicious message received</div><div class="desc">Fake prize notification with suspicious link</div></div>
+            </div>
+            <div class="attack-step show" style="transition-delay:.6s">
+              <div class="attack-dot-col"><div class="attack-dot active"></div><div class="attack-line"></div></div>
+              <div class="attack-content"><div class="title">User clicks the link</div><div class="desc">Redirected to festive-win2026.xyz</div></div>
+            </div>
+            <div class="attack-step show" style="transition-delay:.9s">
+              <div class="attack-dot-col"><div class="attack-dot active"></div><div class="attack-line"></div></div>
+              <div class="attack-content"><div class="title">Personal details harvested</div><div class="desc">Name, phone, email collected on fake form</div></div>
+            </div>
+            <div class="attack-step show" style="transition-delay:1.2s">
+              <div class="attack-dot-col"><div class="attack-dot active"></div><div class="attack-line"></div></div>
+              <div class="attack-content"><div class="title">"Processing fee" demanded</div><div class="desc">Rs. 900 fee to "release" the fake prize</div></div>
+            </div>
+            <div class="attack-step show" style="transition-delay:1.5s">
+              <div class="attack-dot-col"><div class="attack-dot" style="border-color:var(--orange);background:var(--orange)"></div></div>
+              <div class="attack-content"><div class="title" style="color:var(--orange)">Financial loss + identity theft risk</div><div class="desc">Payment data stolen, sold on dark web</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature D: Safe Reply + Learn (47–55s) -->
+  <div class="feature-stage" id="featD">
+    <div class="feature-label"><div class="text">PRIVACY-FIRST · EDUCATION · SAFE REPLIES</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;padding:100px 80px 60px;width:100%;max-width:1700px">
+      <!-- Safe Reply -->
+      <div class="glass-card" style="padding:28px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px">💬 SAFE REPLY GENERATOR</div>
+        <div style="padding:16px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(0,0,0,.3);margin-bottom:16px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Generated response:</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;font-style:italic">"Thank you for reaching out. I'm not interested in this offer. Please remove me from your contact list."</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="padding:6px 14px;border-radius:8px;border:1px solid var(--glass-border);font-size:10px;color:var(--text3)">Copy reply</div>
+          <div style="padding:6px 14px;border-radius:8px;border:1px solid var(--glass-border);font-size:10px;color:var(--text3)">Regenerate</div>
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--green-dim);border:1px solid rgba(34,197,94,.2)">
+          <div style="font-size:11px;color:var(--green);line-height:1.5">✓ Politely declines without revealing any sensitive information</div>
+        </div>
+      </div>
+
+      <!-- Education Center -->
+      <div class="glass-card" style="padding:28px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--violet);margin-bottom:12px">🎓 SCAM EDUCATION CENTER</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">Learn to spot the patterns</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.5;margin-bottom:16px">6 interactive topics + judgment quiz</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass)">
+            <span style="font-size:18px">🎣</span>
+            <span style="font-size:12px;color:var(--text)">How phishing works</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass)">
+            <span style="font-size:18px">🧠</span>
+            <span style="font-size:12px;color:var(--text)">Social engineering tactics</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass)">
+            <span style="font-size:18px">💼</span>
+            <span style="font-size:12px;color:var(--text)">Fake job scam patterns</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass)">
+            <span style="font-size:18px">🔑</span>
+            <span style="font-size:12px;color:var(--text)">OTP &amp; verification scams</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy & Security -->
+      <div class="glass-card" style="padding:28px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:12px">🔒 PRIVACY &amp; SECURITY</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px">Built to protect, not exploit</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:10px;align-items:start">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--text)">Raw messages never stored</div><div style="font-size:11px;color:var(--text3)">Only summaries and reports are saved</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:start">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--text)">Passwordless auth</div><div style="font-size:11px;color:var(--text3)">Email OTP + scrypt hashing + JWT</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:start">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--text)">URLs never opened</div><div style="font-size:11px;color:var(--text3)">Structural checks only — zero risk</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:start">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--text)">Rate limiting &amp; CORS</div><div style="font-size:11px;color:var(--text3)">Server-side protection on every endpoint</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:start">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;font-weight:600;color:var(--text)">AI fallback safety</div><div style="font-size:11px;color:var(--text3)">Deterministic rules engine when AI is offline</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 5 — WOW MOMENT | 55–70s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene5">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%">
+    <!-- Big dramatic label -->
+    <div id="wowLabel" style="opacity:0;margin-bottom:40px">
+      <div class="badge badge-red" style="font-size:13px;padding:10px 28px">🛡️ THREAT REPORT</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:60px;align-items:center">
+      <!-- Giant Score Ring -->
+      <div class="wow-score-wrap" id="wowRing" style="opacity:0">
+        <div class="wow-glow"></div>
+        <div style="width:280px;height:280px;position:relative">
+          <svg width="280" height="280" viewBox="0 0 280 280" style="transform:rotate(-90deg)">
+            <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="16"/>
+            <circle cx="140" cy="140" r="120" fill="none" stroke="var(--red)" stroke-width="16" stroke-linecap="round" stroke-dasharray="754" stroke-dashoffset="754" id="wowScoreRing"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div class="font-display" style="font-size:96px;font-weight:900;color:var(--red);line-height:1" id="wowScoreNum">0</div>
+            <div class="font-mono" style="font-size:14px;font-weight:700;letter-spacing:.2em;color:var(--red);opacity:.7;margin-top:4px">/ 100</div>
+            <div style="margin-top:12px;padding:6px 16px;border-radius:999px;border:1px solid rgba(239,68,68,.3);background:var(--red-dim)">
+              <span class="font-mono" style="font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--red)">CRITICAL RISK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: Quick summary -->
+      <div id="wowDetails" style="opacity:0">
+        <div style="margin-bottom:20px">
+          <div class="font-mono" style="font-size:11px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">CATEGORY</div>
+          <div class="font-display" style="font-size:32px;font-weight:700;color:var(--text)">Fake Prize Scam</div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div class="font-mono" style="font-size:11px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">OUTCOME</div>
+          <div class="font-display" style="font-size:20px;font-weight:600;color:var(--red)">LIKELY SUSPICIOUS — HIGH-RISK INDICATORS DETECTED</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+          <div class="badge badge-red">🎯 Reward Bait</div>
+          <div class="badge badge-red">⏰ Urgency Pressure</div>
+          <div class="badge badge-red">🔗 Suspicious URL</div>
+          <div class="badge badge-yellow">💰 Financial Request</div>
+        </div>
+        <div style="padding:16px 20px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass)">
+          <div class="font-mono" style="font-size:10px;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">SAFE REPLY</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">"Thank you for reaching out. I'm not interested. Please remove me from your contact list."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom tagline -->
+    <div id="wowTagline" style="opacity:0;margin-top:48px;text-align:center">
+      <p class="font-display" style="font-size:28px;font-weight:700;color:var(--text)">
+        From <span style="color:var(--text3)">suspicious message</span> to <span class="text-gradient">complete threat report</span> —<br>
+        <span style="color:var(--cyan)">in under 5 seconds.</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 6 — TECHNICAL IMPACT | 70–82s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene6">
+  <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 100px">
+    <div id="techLabel" style="opacity:0;margin-bottom:40px;text-align:center">
+      <div class="badge badge-cyan" style="margin:0 auto 16px">⚙️ TECHNICAL ARCHITECTURE</div>
+      <h2 class="font-display" style="font-size:40px;font-weight:800;color:var(--text)">Built for <span class="text-gradient">real security.</span></h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;width:100%;max-width:1500px" id="techGrid">
+      <div class="tech-card" id="tc1">
+        <div class="tech-icon" style="background:var(--cyan-dim);color:var(--cyan)">🧠</div>
+        <div class="title">Dual AI Architecture</div>
+        <div class="desc">OpenAI-compatible live AI with strict JSON validation, schema enforcement, one retry, and deterministic fallback engine</div>
+      </div>
+      <div class="tech-card" id="tc2">
+        <div class="tech-icon" style="background:var(--violet-dim);color:var(--violet)">⚙️</div>
+        <div class="title">56+ Detection Patterns</div>
+        <div class="desc">Rules-based threat-intelligence engine analyzing social engineering, urgency, financial risk, and link indicators</div>
+      </div>
+      <div class="tech-card" id="tc3">
+        <div class="tech-icon" style="background:var(--green-dim);color:var(--green)">🔐</div>
+        <div class="title">Zero-Trust Security</div>
+        <div class="desc">HMAC session tokens, scrypt password hashing, email OTP with attempt budgets, rate limiting, CORS protection</div>
+      </div>
+      <div class="tech-card" id="tc4">
+        <div class="tech-icon" style="background:rgba(249,115,22,.12);color:var(--orange)">📊</div>
+        <div class="title">Privacy-First Storage</div>
+        <div class="desc">SQLite with node:sqlite — summaries only, raw messages never retained, per-account data isolation</div>
+      </div>
+      <div class="tech-card" id="tc5">
+        <div class="tech-icon" style="background:rgba(234,179,8,.1);color:var(--yellow)">🌐</div>
+        <div class="title">Multi-Modal Input</div>
+        <div class="desc">Text analysis, URL structural inspection, image/screenshot upload — all through a unified analysis pipeline</div>
+      </div>
+      <div class="tech-card" id="tc6">
+        <div class="tech-icon" style="background:rgba(236,72,153,.1);color:#ec4899">🎨</div>
+        <div class="title">Modern Frontend</div>
+        <div class="desc">React 18 + TypeScript, Framer Motion, Three.js 3D shield scene, Recharts dashboards, Tailwind glassmorphism</div>
+      </div>
+      <div class="tech-card" id="tc7">
+        <div class="tech-icon" style="background:rgba(34,211,238,.1);color:var(--cyan)">🛡️</div>
+        <div class="title">Responsible AI</div>
+        <div class="desc">Evidence → inference → uncertainty breakdown. "AI is not a verdict" — probabilistic assessments with honest disclaimers</div>
+      </div>
+      <div class="tech-card" id="tc8">
+        <div class="tech-icon" style="background:rgba(167,139,250,.1);color:var(--violet)">♿</div>
+        <div class="title">Accessibility</div>
+        <div class="desc">Semantic HTML, focus states, ARIA labels, reduced-motion support, readable contrast, keyboard navigation</div>
+      </div>
+    </div>
+
+    <!-- Tech stack strip -->
+    <div id="techStack" style="opacity:0;margin-top:32px;display:flex;gap:24px;align-items:center">
+      <span class="font-mono" style="font-size:10px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase">STACK:</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">React 18</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">TypeScript</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Vite 5</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Express</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Node.js</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">SQLite</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Three.js</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Tailwind</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Framer Motion</span>
+      <span style="padding:6px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font-size:12px;color:var(--text2)">Recharts</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE 7 — FINAL HERO SHOT | 82–90s
+     ═══════════════════════════════════════════════════ -->
+<div class="scene" id="scene7">
+  <div class="shield-glow" style="top:45%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px"></div>
+  <!-- Particles -->
+  <div class="particle" style="top:10%;left:15%;animation-delay:0s;width:4px;height:4px;opacity:.4"></div>
+  <div class="particle" style="top:20%;left:80%;animation-delay:.5s;width:3px;height:3px"></div>
+  <div class="particle" style="top:65%;left:90%;animation-delay:1s;width:2px;height:2px;opacity:.2"></div>
+  <div class="particle" style="top:75%;left:8%;animation-delay:1.5s;width:4px;height:4px;opacity:.3"></div>
+  <div class="particle" style="top:35%;left:70%;animation-delay:2s;width:2px;height:2px"></div>
+  <div class="particle" style="top:85%;left:55%;animation-delay:.8s;width:3px;height:3px;opacity:.2"></div>
+
+  <div style="text-align:center;position:relative;z-index:2">
+    <!-- Shield -->
+    <div class="hero-logo" style="display:flex;justify-content:center;margin-bottom:36px">
+      <svg width="100" height="120" viewBox="0 0 100 120" fill="none" style="filter:drop-shadow(0 0 40px rgba(34,211,238,.3))">
+        <defs>
+          <linearGradient id="shieldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+        <path d="M50 8 L92 28 L92 58 C92 82 72 102 50 112 C28 102 8 82 8 58 L8 28 Z" stroke="url(#shieldGrad2)" stroke-width="3" fill="rgba(34,211,238,.05)"/>
+        <path d="M38 58 L46 66 L64 48" stroke="url(#shieldGrad2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Brand -->
+    <div class="hero-logo" style="animation-delay:.3s">
+      <span class="font-display" style="font-size:64px;font-weight:900;letter-spacing:-.02em;color:var(--text)">SCAMSHIELD</span>
+      <span class="font-display text-gradient" style="font-size:64px;font-weight:900;letter-spacing:-.02em"> AI</span>
+    </div>
+
+    <!-- Tagline -->
+    <div class="hero-tagline" style="margin-top:32px">
+      <h2 class="font-display" style="font-size:36px;font-weight:700;color:var(--text);line-height:1.3">
+        Don't just detect the scam.<br>
+        <span class="text-gradient" style="font-size:42px">Understand it.</span>
+      </h2>
+    </div>
+
+    <!-- Sub-tagline -->
+    <div class="hero-tagline" style="margin-top:20px;animation-delay:1s">
+      <p style="font-size:18px;color:var(--text2);line-height:1.6">
+        Before it understands you.
+      </p>
+    </div>
+
+    <!-- Tech stack mini -->
+    <div class="hero-cta" style="margin-top:40px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <span style="padding:8px 18px;border-radius:10px;border:1px solid rgba(34,211,238,.2);background:rgba(34,211,238,.06);font-size:13px;font-weight:600;color:var(--cyan)">✦ Explainable AI</span>
+      <span style="padding:8px 18px;border-radius:10px;border:1px solid rgba(167,139,250,.2);background:rgba(167,139,250,.06);font-size:13px;font-weight:600;color:var(--violet)">🔒 Privacy-First</span>
+      <span style="padding:8px 18px;border-radius:10px;border:1px solid rgba(34,197,94,.2);background:rgba(34,197,94,.06);font-size:13px;font-weight:600;color:var(--green)">🛡️ Human-in-the-Loop</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="hero-footer" style="margin-top:64px">
+      <div class="font-mono" style="font-size:11px;color:var(--text3);letter-spacing:.15em">
+        EVIDENCE-BASED · PRIVACY-FIRST · HUMAN-IN-THE-LOOP
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3)">
+        © 2026 ScamShield AI — Built for the opportunity.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCENE SCRIPT (JavaScript)
+     ═══════════════════════════════════════════════════ -->
+<script>
+const TOTAL_DURATION = 90000; // 90 seconds
+const SCENES = [
+  { id:'scene1', start:0,    end:8000,  label:'HOOK' },
+  { id:'scene2', start:8000,  end:15000, label:'THE PROBLEM' },
+  { id:'scene3', start:15000, end:25000, label:'THE SOLUTION' },
+  { id:'scene4', start:25000, end:55000, label:'CORE FEATURES' },
+  { id:'scene5', start:55000, end:70000, label:'WOW MOMENT' },
+  { id:'scene6', start:70000, end:82000, label:'TECHNICAL IMPACT' },
+  { id:'scene7', start:82000, end:90000, label:'FINAL HERO' },
+];
+
+let currentScene = -1;
+let startTime = null;
+let paused = false;
+let pauseTime = 0;
+let pausedAt = 0;
+let rafId = null;
+
+// Elements
+const progressBar = document.getElementById('progressBar');
+const sceneCounter = document.getElementById('sceneCounter');
+const controls = document.getElementById('controls');
+const playBtn = document.getElementById('playBtn');
+
+function showScene(idx) {
+  if (idx === currentScene) return;
+  // Hide all
+  SCENES.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (el) el.classList.remove('active');
+  });
+  // Show new
+  if (idx >= 0 && idx < SCENES.length) {
+    const el = document.getElementById(SCENES[idx].id);
+    if (el) el.classList.add('active');
+    sceneCounter.textContent = `SCENE ${idx+1} / 7 — ${SCENES[idx].label}`;
+    currentScene = idx;
+    onSceneEnter(idx);
+  }
+}
+
+function tick(timestamp) {
+  if (paused) { rafId = requestAnimationFrame(tick); return; }
+  if (!startTime) startTime = timestamp - pauseTime;
+  const elapsed = timestamp - startTime;
+  const progress = Math.min(elapsed / TOTAL_DURATION, 1);
+  progressBar.style.width = (progress * 100) + '%';
+
+  // Determine scene
+  const ms = elapsed;
+  for (let i = SCENES.length - 1; i >= 0; i--) {
+    if (ms >= SCENES[i].start) {
+      showScene(i);
+      break;
+    }
+  }
+
+  if (progress < 1) {
+    rafId = requestAnimationFrame(tick);
+  } else {
+    // Done — show controls permanently
+    controls.classList.add('visible');
+    sceneCounter.classList.add('visible');
+  }
+}
+
+function start() {
+  controls.classList.add('visible');
+  sceneCounter.classList.add('visible');
+  startTime = null;
+  pauseTime = 0;
+  rafId = requestAnimationFrame(tick);
+}
+
+function togglePlay() {
+  if (paused) {
+    paused = false;
+    playBtn.textContent = '⏸ Pause';
+    startTime = performance.now() - pausedAt;
+  } else {
+    paused = true;
+    pausedAt = performance.now() - startTime;
+    playBtn.textContent = '▶ Play';
+  }
+}
+
+function restart() {
+  paused = false;
+  playBtn.textContent = '⏸ Pause';
+  startTime = null;
+  pauseTime = 0;
+  pausedAt = 0;
+  currentScene = -1;
+  resetAnimations();
+  rafId = requestAnimationFrame(tick);
+}
+
+function skipToScene(idx) {
+  if (idx < 0 || idx >= SCENES.length) return;
+  const targetTime = SCENES[idx].start;
+  startTime = performance.now() - targetTime;
+  pausedAt = targetTime;
+  if (paused) {
+    paused = false;
+    playBtn.textContent = '⏸ Pause';
+  }
+  showScene(idx);
+}
+
+function resetAnimations() {
+  // Reset feature stage animations
+  document.querySelectorAll('.feature-stage').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.scan-text .line').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('.reason-card').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('.attack-step').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('.tech-card').forEach(el => el.classList.remove('show'));
+  // Reset floating messages
+  ['fmsg1','fmsg2','fmsg3','fmsg4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; }
+  });
+  // Reset wow elements
+  const wowLabel = document.getElementById('wowLabel');
+  const wowRing = document.getElementById('wowRing');
+  const wowDetails = document.getElementById('wowDetails');
+  const wowTagline = document.getElementById('wowTagline');
+  if (wowLabel) wowLabel.style.opacity = '0';
+  if (wowRing) wowRing.style.opacity = '0';
+  if (wowDetails) wowDetails.style.opacity = '0';
+  if (wowTagline) wowTagline.style.opacity = '0';
+  // Reset tech
+  const techLabel = document.getElementById('techLabel');
+  const techStack = document.getElementById('techStack');
+  if (techLabel) techLabel.style.opacity = '0';
+  if (techStack) techStack.style.opacity = '0';
+  // Reset typewriter
+  const typedText = document.getElementById('typedText');
+  const charCount = document.getElementById('charCount');
+  const previewText = document.getElementById('previewText');
+  if (typedText) typedText.textContent = '';
+  if (charCount) charCount.textContent = '0';
+  if (previewText) previewText.textContent = '';
+  // Reset score
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  if (scoreDisplay) scoreDisplay.textContent = '0';
+  const wowScoreNum = document.getElementById('wowScoreNum');
+  if (wowScoreNum) wowScoreNum.textContent = '0';
+}
+
+// ═══ Scene-specific animations ═══
+
+let scene4Timers = [];
+
+function onSceneEnter(idx) {
+  clearSceneTimers();
+
+  if (idx === 1) { // Scene 2 — Problem
+    const msgs = [
+      document.getElementById('fmsg1'),
+      document.getElementById('fmsg2'),
+      document.getElementById('fmsg3'),
+      document.getElementById('fmsg4'),
+    ];
+    msgs.forEach((el, i) => {
+      if (!el) return;
+      scene4Timers.push(setTimeout(() => {
+        el.style.transition = 'opacity .6s ease, transform .6s ease';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, 400 + i * 400));
+    });
+  }
+
+  if (idx === 3) { // Scene 4 — Features
+    runFeatureSequence();
+  }
+
+  if (idx === 4) { // Scene 5 — Wow
+    runWowSequence();
+  }
+
+  if (idx === 5) { // Scene 6 — Tech
+    runTechSequence();
+  }
+}
+
+function clearSceneTimers() {
+  scene4Timers.forEach(t => clearTimeout(t));
+  scene4Timers = [];
+}
+
+function runFeatureSequence() {
+  const stages = ['featA','featB','featC','featD'];
+  // Stage timings within Scene 4 (30s total)
+  const stageTimings = [
+    { stage:'featA', start:0,    dur:7000 },  // 25-32s: Paste & Analyze
+    { stage:'featB', start:7000, dur:7000 },  // 32-39s: Scan Animation
+    { stage:'featC', start:14000,dur:8000 },  // 39-47s: Threat Report
+    { stage:'featD', start:22000,dur:8000 },  // 47-55s: Safe Reply, Learn, Privacy
+  ];
+
+  stageTimings.forEach(({stage, start, dur}) => {
+    // Show stage
+    scene4Timers.push(setTimeout(() => {
+      stages.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.remove('active');
+      });
+      const el = document.getElementById(stage);
+      if (el) el.classList.add('active');
+
+      if (stage === 'featA') runTypewriter();
+      if (stage === 'featB') runScanAnimation();
+      if (stage === 'featC') runReportAnimation();
+    }, start));
+  });
+}
+
+// Typewriter effect
+function runTypewriter() {
+  const msg = "Congratulations! You have been selected to receive a cash prize of Rs. 50,000. Claim your reward immediately: http://festive-win2026.xyz/claim Hurry! Offer expires tonight!";
+  const typedText = document.getElementById('typedText');
+  const charCount = document.getElementById('charCount');
+  const previewText = document.getElementById('previewText');
+  if (!typedText) return;
+
+  typedText.textContent = '';
+  if (previewText) previewText.textContent = '';
+  let i = 0;
+  const speed = 28; // ms per char
+
+  function type() {
+    if (i < msg.length) {
+      typedText.textContent += msg[i];
+      if (charCount) charCount.textContent = i + 1;
+      if (previewText && i > 20) previewText.textContent = msg.substring(0, Math.min(i + 1, msg.length));
+      i++;
+      const t = setTimeout(type, speed);
+      scene4Timers.push(t);
+    }
+  }
+  type();
+}
+
+// Scan animation
+function runScanAnimation() {
+  const lines = ['sl1','sl2','sl3','sl4','sl5','sl6'];
+  const scanLine = document.getElementById('scanLine');
+  const scanResult = document.getElementById('scanResult');
+  const analyzingBadge = document.getElementById('analyzingBadge');
+
+  if (scanLine) scanLine.style.display = 'block';
+  if (scanResult) scanResult.style.opacity = '0';
+  if (analyzingBadge) analyzingBadge.style.display = '';
+
+  lines.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('show');
+    scene4Timers.push(setTimeout(() => {
+      el.classList.add('show');
+    }, 300 + i * 800));
+  });
+
+  scene4Timers.push(setTimeout(() => {
+    if (scanLine) scanLine.style.display = 'none';
+    if (scanResult) {
+      scanResult.style.transition = 'opacity .5s ease';
+      scanResult.style.opacity = '1';
+    }
+  }, 300 + lines.length * 800 + 400));
+}
+
+// Report animation — score ring fill
+function runReportAnimation() {
+  const scoreRingFg = document.getElementById('scoreRingFg');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const dimFills = document.querySelectorAll('#featC .dim-bar .fill');
+
+  // Animate score from 0 to 93
+  let score = 0;
+  const targetScore = 93;
+  const duration = 2000;
+  const startTime = performance.now();
+
+  function animateScore(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    score = Math.round(eased * targetScore);
+    if (scoreDisplay) scoreDisplay.textContent = score;
+    if (scoreRingFg) {
+      const offset = 283 - (283 * eased * 0.9); // target ~90% fill
+      scoreRingFg.style.strokeDashoffset = offset;
+    }
+    if (progress < 1) {
+      const t = requestAnimationFrame(animateScore);
+      scene4Timers.push(t);
+    }
+  }
+  const t = requestAnimationFrame(animateScore);
+  scene4Timers.push(t);
+
+  // Animate dimension bars
+  dimFills.forEach((fill, i) => {
+    scene4Timers.push(setTimeout(() => {
+      fill.style.transition = 'width 1.2s ease-out';
+    }, 500 + i * 200));
+  });
+}
+
+// Wow moment sequence
+function runWowSequence() {
+  const wowLabel = document.getElementById('wowLabel');
+  const wowRing = document.getElementById('wowRing');
+  const wowDetails = document.getElementById('wowDetails');
+  const wowTagline = document.getElementById('wowTagline');
+  const wowScoreRing = document.getElementById('wowScoreRing');
+  const wowScoreNum = document.getElementById('wowScoreNum');
+
+  // Step 1: Show label (0ms)
+  scene4Timers.push(setTimeout(() => {
+    if (wowLabel) { wowLabel.style.transition = 'opacity .5s ease'; wowLabel.style.opacity = '1'; }
+  }, 200));
+
+  // Step 2: Show score ring (800ms)
+  scene4Timers.push(setTimeout(() => {
+    if (wowRing) { wowRing.style.transition = 'opacity .6s ease'; wowRing.style.opacity = '1'; }
+
+    // Animate ring
+    let score = 0;
+    const targetScore = 93;
+    const duration = 2500;
+    const st = performance.now();
+
+    function animWow(now) {
+      const progress = Math.min((now - st) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      score = Math.round(eased * targetScore);
+      if (wowScoreNum) wowScoreNum.textContent = score;
+      if (wowScoreRing) {
+        const offset = 754 - (754 * eased * 0.9);
+        wowScoreRing.style.transition = 'stroke-dashoffset .1s linear';
+        wowScoreRing.style.strokeDashoffset = offset;
+      }
+      if (progress < 1) {
+        const t = requestAnimationFrame(animWow);
+        scene4Timers.push(t);
+      }
+    }
+    const t = requestAnimationFrame(animWow);
+    scene4Timers.push(t);
+  }, 800));
+
+  // Step 3: Show details (2500ms)
+  scene4Timers.push(setTimeout(() => {
+    if (wowDetails) { wowDetails.style.transition = 'opacity .6s ease, transform .6s ease'; wowDetails.style.opacity = '1'; wowDetails.style.transform = 'translateX(0)'; }
+  }, 2500));
+
+  // Step 4: Show tagline (5000ms)
+  scene4Timers.push(setTimeout(() => {
+    if (wowTagline) { wowTagline.style.transition = 'opacity .8s ease'; wowTagline.style.opacity = '1'; }
+  }, 5000));
+}
+
+// Tech sequence
+function runTechSequence() {
+  const techLabel = document.getElementById('techLabel');
+  const techStack = document.getElementById('techStack');
+  const cards = document.querySelectorAll('.tech-card');
+
+  scene4Timers.push(setTimeout(() => {
+    if (techLabel) { techLabel.style.transition = 'opacity .5s ease'; techLabel.style.opacity = '1'; }
+  }, 200));
+
+  cards.forEach((card, i) => {
+    scene4Timers.push(setTimeout(() => {
+      card.classList.add('show');
+    }, 500 + i * 350));
+  });
+
+  scene4Timers.push(setTimeout(() => {
+    if (techStack) { techStack.style.transition = 'opacity .5s ease'; techStack.style.opacity = '1'; }
+  }, 500 + cards.length * 350 + 300));
+}
+
+// ─── Init ───
+start();
+</script>
+</body>
+</html>

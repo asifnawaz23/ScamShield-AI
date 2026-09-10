@@ -4,14 +4,14 @@
 
 <br/>
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-scamshield--ai.vercel.app-06b6d4?style=for-the-badge&logo=vercel&logoColor=white&labelColor=0f172a)](https://scamshield-ai.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-myscamshield--ai.netlify.app-06b6d4?style=for-the-badge&logo=netlify&logoColor=white&labelColor=0f172a)](https://myscamshield-ai.netlify.app)
 [![Build with Kiro](https://img.shields.io/badge/Built%20with-Kiro%202026-7c3aed?style=for-the-badge&labelColor=0f172a)](https://kiro.dev)
 [![Node.js ≥22.5](https://img.shields.io/badge/Node.js-%E2%89%A522.5-339933?style=for-the-badge&logo=node.js&logoColor=white&labelColor=0f172a)](https://nodejs.org)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=0f172a)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white&labelColor=0f172a)](https://www.typescriptlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-06b6d4?style=for-the-badge&labelColor=0f172a)](LICENSE)
 
-**[🚀 Live Application](https://scamshield-ai.vercel.app) · [📋 Requirements](.kiro/specs/requirements.md) · [🏗️ Design](.kiro/specs/design.md) · [✅ Tasks](.kiro/specs/tasks.md)**
+**[🚀 Live Application](https://myscamshield-ai.netlify.app) · [📋 Requirements](.kiro/specs/requirements.md) · [🏗️ Design](.kiro/specs/design.md) · [✅ Tasks](.kiro/specs/tasks.md)**
 
 </div>
 
@@ -177,7 +177,7 @@ All tests use Node.js built-in `node:test` — no external test framework needed
 See [`DEPLOY.md`](DEPLOY.md) for step-by-step instructions.
 
 - **Backend:** [Render.com](https://render.com) (free tier) — see [`render.yaml`](render.yaml)
-- **Frontend:** [Vercel](https://vercel.com) (free tier) — see [`vercel.json`](vercel.json)
+- **Frontend:** [Netlify](https://netlify.com) (free tier) — see [`netlify.toml`](netlify.toml)
 
 ---
 
