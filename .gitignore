@@ -29,15 +29,8 @@ data/*.db-wal
 data/*.db-shm
 
 # Demo video files (excluded from repo)
-client/public/demo-v2.html
-client/public/demo-video.html
+screenshot/
 client/public/video-shots/
-docs/hackathon/*.mp4
-render-*.js
-capture-*.js
-_frames*/
-node_modules/
-scamshield-demo*.mp4
 
 # OS / editor artifacts
 .DS_Store
