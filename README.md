@@ -37,6 +37,8 @@
 
 > **ScamShield AI** turns a suspicious message, screenshot, or link into a full, structured, *explainable* threat report — in seconds.
 
+Built for the **Pakistani market** — detects scams targeting HBL, MCB, UBL, JazzCash, EasyPaisa, NADRA, BISP/Ehsaas, FBR, and more. Understands both English and Roman Urdu scam messages.
+
 Most spam filters say *"likely spam"* and stop there. ScamShield goes further: it tells you **what makes the message dangerous**, **which manipulation tactics are being used**, and **what could happen next** — before you fall for it.
 
 <div align="center">
@@ -57,7 +59,30 @@ Most spam filters say *"likely spam"* and stop there. ScamShield goes further: i
 
 ---
 
-## 🖼️ Screenshots
+## 🇵🇰 Pakistan Market Coverage
+
+ScamShield AI is calibrated for Pakistani users. It detects scams targeting:
+
+| Category | Covered Entities |
+|----------|-----------------|
+| **Banks** | HBL, MCB, UBL, ABL, Meezan, Bank Alfalah, Askari, Faysal, NBP, BOP, Habib Metro, Standard Chartered PK |
+| **Mobile Wallets** | JazzCash, EasyPaisa, NayaPay, SadaPay, UPaisa, HBL Konnect |
+| **Government** | NADRA, FBR, SBP, PTA, FIA, NAB, BISP, Ehsaas Programme |
+| **Telecom** | Jazz, Telenor, Zong, Ufone |
+| **E-Commerce** | Daraz, OLX Pakistan |
+| **Languages** | English + Roman Urdu scam phrases |
+
+### Unique Signal Classes for Pakistan
+
+- **CNIC/NADRA Theft** — Detects messages requesting CNIC number, copy, or biometric data
+- **BISP/Ehsaas Scam** — Detects fake government welfare payment messages
+- **JazzCash/EasyPaisa OTP** — Detects mobile wallet OTP theft attempts
+- **8171 Spoofing** — Detects BISP helpline number impersonation
+- **+92 WhatsApp Redirect** — Detects bypass to unofficial channels
+
+---
+
+
 
 <details open>
 <summary><b>🏠 Landing Page</b></summary>
@@ -132,11 +157,12 @@ Most spam filters say *"likely spam"* and stop there. ScamShield goes further: i
 
 **🛡️ Core Intelligence**
 - Overall risk score (0–100) with threat classification
-- Suspicious signal extraction with evidence quotes
+- **Pakistan-calibrated** signal detection (HBL, MCB, JazzCash, NADRA, BISP, FBR...)
+- **Roman Urdu + English** scam pattern recognition
+- CNIC/NADRA identity theft detection (new signal class)
+- BISP/Ehsaas welfare scam detection (new signal class)
 - 5-dimension risk radar (social engineering, urgency, credential risk…)
-- Manipulation tactics identification
 - URL structural risk analysis (never opens the link)
-- Requested-information sensitivity analysis
 
 </td>
 <td width="50%">
