@@ -1,9 +1,9 @@
 {
   "version": 2,
   "name": "scamshield-ai",
-  "buildCommand": "npm --prefix client install && npm --prefix client run build",
+  "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
-  "installCommand": "echo 'skip root install'",
+  "installCommand": "cd client && npm install",
   "framework": null,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
