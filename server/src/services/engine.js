@@ -1,28 +1,29 @@
 // ScamShield AI — Rules-based Threat Intelligence Engine
-// This engine produces explainable risk assessments in DEMO MODE,
-// and, when live AI is configured, serves as the safety net/validator.
-// Everything it produces is framed as likelihood, not verdict.
+// PRIMARY MARKET: Pakistan
+// Signals, trusted domains, and demo scenarios are calibrated for
+// Pakistani users — HBL, MCB, UBL, Meezan, JazzCash, EasyPaisa,
+// NADRA CNIC, FBR, SBP, and Pakistani telecom/digital platforms.
 
 const CATEGORIES = [
-  { id: 'phishing', label: 'Phishing', icon: 'phishing', tone: 'orange' },
-  { id: 'fake_prize', label: 'Fake Prize', icon: 'gift', tone: 'red' },
-  { id: 'job_scam', label: 'Job Scam', icon: 'briefcase', tone: 'orange' },
-  { id: 'investment_scam', label: 'Investment Scam', icon: 'trending', tone: 'red' },
-  { id: 'payment_scam', label: 'Payment Scam', icon: 'creditcard', tone: 'red' },
-  { id: 'impersonation', label: 'Impersonation', icon: 'users', tone: 'orange' },
-  { id: 'account_takeover', label: 'Account Takeover Attempt', icon: 'key', tone: 'red' },
-  { id: 'delivery_scam', label: 'Delivery Scam', icon: 'package', tone: 'orange' },
-  { id: 'romance', label: 'Romance / Social Engineering', icon: 'heart', tone: 'orange' },
-  { id: 'tech_support', label: 'Tech Support Scam', icon: 'wrench', tone: 'orange' },
-  { id: 'unknown', label: 'Unknown Suspicious Pattern', icon: 'shield', tone: 'yellow' },
+  { id: 'phishing',          label: 'Phishing',                        icon: 'phishing',   tone: 'orange' },
+  { id: 'fake_prize',        label: 'Fake Prize / Lucky Draw',         icon: 'gift',       tone: 'red'    },
+  { id: 'job_scam',          label: 'Fake Job Offer',                  icon: 'briefcase',  tone: 'orange' },
+  { id: 'investment_scam',   label: 'Investment / Forex Scam',         icon: 'trending',   tone: 'red'    },
+  { id: 'payment_scam',      label: 'Payment / Fee Scam',              icon: 'creditcard', tone: 'red'    },
+  { id: 'impersonation',     label: 'Bank / Government Impersonation', icon: 'users',      tone: 'orange' },
+  { id: 'account_takeover',  label: 'Account Takeover Attempt',        icon: 'key',        tone: 'red'    },
+  { id: 'delivery_scam',     label: 'Parcel / Delivery Scam',          icon: 'package',    tone: 'orange' },
+  { id: 'romance',           label: 'Romance / Social Engineering',    icon: 'heart',      tone: 'orange' },
+  { id: 'tech_support',      label: 'Tech Support Scam',               icon: 'wrench',     tone: 'orange' },
+  { id: 'unknown',           label: 'Unknown Suspicious Pattern',      icon: 'shield',     tone: 'yellow' },
 ];
 
 const RISK_LEVELS = [
-  { max: 19, level: 'safe', label: 'LIKELY SAFE', tone: 'green' },
-  { max: 39, level: 'low', label: 'LOW RISK', tone: 'green' },
-  { max: 59, level: 'suspicious', label: 'SUSPICIOUS', tone: 'yellow' },
-  { max: 79, level: 'high', label: 'HIGH RISK', tone: 'orange' },
-  { max: 100, level: 'critical', label: 'CRITICAL', tone: 'red' },
+  { max: 19,  level: 'safe',       label: 'LIKELY SAFE',   tone: 'green'  },
+  { max: 39,  level: 'low',        label: 'LOW RISK',      tone: 'green'  },
+  { max: 59,  level: 'suspicious', label: 'SUSPICIOUS',    tone: 'yellow' },
+  { max: 79,  level: 'high',       label: 'HIGH RISK',     tone: 'orange' },
+  { max: 100, level: 'critical',   label: 'CRITICAL',      tone: 'red'    },
 ];
 
 function findLevel(score) {
@@ -32,195 +33,480 @@ function findCategory(id) {
   return CATEGORIES.find((c) => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SIGNAL PATTERNS — Pakistan-calibrated
+// ─────────────────────────────────────────────────────────────────────────────
 const RE = {
+
+  // Urgency — English + Roman Urdu
   urgency: [
-    /urgent/i, /\bimmediately\b/i, /right now/i, /act now/i, /\basap\b/i,
-    /within\s*\d+\s*hour/i, /expiring (today|soon)/i, /last chance/i,
-    /don'?t miss/i, /limited time/i, /before (midnight|tomorrow)/i,
-    /hurry/i, /respond quickly/i,
+    /urgent/i,
+    /\bفوری\b/,                           // Fori (urgent) — Urdu
+    /\bابھی\b/,                           // Abhi (right now)
+    /\bimmediately\b/i,
+    /right now/i,
+    /act now/i,
+    /\basap\b/i,
+    /within\s*\d+\s*(hour|ghante|minute)/i,
+    /aaj raat tak/i,                      // "by tonight"
+    /kal tak/i,                           // "by tomorrow"
+    /last chance/i,
+    /don'?t miss/i,
+    /limited time/i,
+    /hurry/i,
+    /jaldi karen/i,                       // "please hurry"
+    /jaldi karo/i,
+    /foran/i,                             // "immediately" in Urdu romanized
+    /abhi reply karen/i,
+    /turant/i,                            // "immediately"
+    /expire (ho|kar) (raha|rahi)/i,       // "expiring"
+    /kal expire/i,
   ],
+
+  // Fear / Threats — Pakistani context
   fear: [
     /your (account|card|wallet) (will be|has been) (blocked|suspended|locked)/i,
-    /account.*(blocked|suspended|will be closed)/i,
-    /legal action/i, /\barrest\b/i, /complaint (filed|registered)/i,
-    /penalty/i, /forensic/i, /pay (or|to avoid)/i, /your (aadhaar|pan|kyc) (will|has) (be|been) blocked/i,
+    /account.*(blocked|suspended|band|freeze)/i,
+    /\bapka account band\b/i,             // "your account will be closed"
+    /legal action/i,
+    /\barrest\b/i,
+    /\bFIA\b/,                            // Federal Investigation Agency Pakistan
+    /\bNAB\b/,                            // National Accountability Bureau
+    /court notice/i,
+    /\bwarrant\b/i,
+    /penalty/i,
+    /\bjurmanah\b/i,                      // "fine/penalty" in Urdu
+    /case darj/i,                         // "case registered"
+    /muqadma/i,                           // "lawsuit/case"
+    /band ho jayega/i,                    // "will be closed"
+    /block ho jayega/i,
+    /suspend (kar diya|ho jayega)/i,
+    /your (cnic|sim|number) (will be|has been) (blocked|suspended)/i,
+    /sim (band|block) ho jayegi/i,
+    /tax (default|evasion|notice)/i,
+    /\bFBR notice\b/i,                    // Federal Board of Revenue
   ],
+
+  // Authority impersonation — Pakistani institutions
   authority: [
-    /bank|sbi|hdfc|icici|axis|yes bank/i,
-    /government|income tax|gst|income.?tax department/i,
-    /police|cyber cell|legal/i,
-    /\bofficial\b/i, /authorized/i, /registered agent/i,
-    /customer (care|support)/i, /support team/i,
-    /reserve bank|rbi|sebi/i,
-    /amazon|flipkart|netflix|microsoft|google|whatsapp|paytm|phonepe|icloud|apple|paypal|instagram|telegram|linkedin/i,
-    /courier|dtdc|blue dart|india post|fedex|ups/i,
+    // Banks
+    /\bHBL\b/,                            // Habib Bank Limited
+    /\bMCB\b/,                            // Muslim Commercial Bank
+    /\bUBL\b/,                            // United Bank Limited
+    /\bABL\b/,                            // Allied Bank Limited
+    /\bBOK\b/,                            // Bank of Khyber
+    /\bSME bank\b/i,
+    /meezan bank/i,
+    /bank alfalah/i,
+    /askari bank/i,
+    /faysal bank/i,
+    /habib metropolitan/i,
+    /standard chartered pakistan/i,
+    /national bank of pakistan|NBP/i,
+    /bank of punjab|BOP/i,
+    /zarai taraqiati bank|ZTBL/i,
+    // Digital wallets / mobile money (most common scam vector in PK)
+    /\bJazzCash\b/i,
+    /\bEasyPaisa\b/i,
+    /\bNayaPay\b/i,
+    /\bSadaPay\b/i,
+    /\bUPaisa\b/i,
+    /\bHBL Konnect\b/i,
+    // Government & regulatory
+    /\bNADRA\b/,                          // National Database & Registration Authority
+    /\bFBR\b/,                            // Federal Board of Revenue
+    /\bSBP\b/,                            // State Bank of Pakistan
+    /\bPTA\b/,                            // Pakistan Telecom Authority
+    /\bFIA\b/,
+    /\bNAB\b/,
+    /pakistan government/i,
+    /wazarat/i,                           // "ministry"
+    /prime minister (office|pakistan)/i,
+    /BISP/i,                              // Benazir Income Support Programme
+    /ehsaas (program|payment)/i,          // Ehsaas cash transfer
+    /benazir (income|kafalat)/i,
+    // Telecom
+    /\bJazz\b/,
+    /\bTelenor\b/i,
+    /\bZong\b/i,
+    /\bUfone\b/i,
+    /\bSCO\b/i,                           // Special Communication Organization
+    // E-commerce / platforms
+    /daraz\.pk/i,
+    /\bDaraz\b/i,
+    /\bOLX\b/i,
+    /foodpanda/i,
+    /\bCareem\b/i,
+    /\bInDrive\b/i,
+    // International brands (often impersonated)
+    /amazon|netflix|microsoft|google|whatsapp|apple|paypal/i,
+    /facebook|instagram|tiktok|youtube/i,
+    /courier|leopards|tcs|speedex|m&p|pakistan post/i,
   ],
+
+  // Reward bait — Pakistani context
   reward: [
-    /congratulations/i, /you (have )?been selected/i, /you ('ve| have) won/i,
-    /prize/i, /reward/i, /claim (your|the)/i, /lucky (winner|draw)/i,
-    /lottery/i, /gift (card|voucher|hamper)/i, /festival (offer|bonus|draw)/i,
-    /win.?ner/i, /selected.*reward/i,
+    /congratulations/i,
+    /mubarak ho/i,                        // "congratulations" Urdu
+    /mubarakbaad/i,
+    /you (have )?been selected/i,
+    /ap ka number (lucky draw|nikla)/i,   // "your number came out in lucky draw"
+    /lucky draw/i,
+    /you ('ve| have) won/i,
+    /jeet liya/i,                         // "you have won"
+    /prize/i,
+    /inaam/i,                             // "reward/prize" Urdu
+    /reward/i,
+    /claim (your|the)/i,
+    /lottery/i,
+    /gift (card|voucher)/i,
+    /hamper/i,
+    /inam nikla/i,                        // "prize came out"
+    /selected.*reward/i,
+    /HBL lucky draw/i,
+    /Meezan (prize|lucky|inaam)/i,
+    /Jazz (prize|lucky|winner)/i,
+    /Telenor (prize|lucky|winner)/i,
   ],
+
+  // Too-good-to-be-true financial claims — Pakistani PKR + crypto
   tooGood: [
-    /rs\.?\s?\d[\d,.]{2,}|inr\s?\d[\d,.]{2,}|(?:us\$|\$)\d{2,}/i,
-    /double your money/i, /guaranteed (profit|return|earnings)/i,
-    /earn (up to )?(rs\.|inr|\$)?\s?\d[\d,.]{2,}/i, /daily (earning|income)/i,
-    /easy (money|earning|income)/i, /get rich/i, /invest.*guaranteed/i,
+    /(?:PKR|Rs\.?|rupees?)\s*[\d,]{4,}/i,   // PKR amounts
+    /\d+\s*(lakh|lac|crore|thousand)/i,      // South Asian number notation
+    /double your (money|investment|paisa)/i,
+    /guaranteed (profit|return|munafa|kamai)/i,
+    /earn\s*(per day|daily|rozana)/i,
+    /\d+%\s*(daily|weekly|monthly|rozana)\s*(return|profit|munafa)/i,
+    /easy (money|earning|paisa|kamai)/i,
+    /get rich/i,
+    /ghar baithe kamai/i,                    // "earn from home"
+    /rozana\s*(?:PKR|Rs\.?)?\s*[\d,]+/i,    // daily PKR amount
+    /invest.*guaranteed/i,
+    /120% (return|profit)/i,
+    /aik hafte mein double/i,                // "double in one week"
   ],
+
+  // Credential harvesting
   credential: [
-    /password/i, /login (credentials|details|id)/i, /update your (password|pin|credentials)/i,
-    /verify your (account|identity|login)/i, /confirm (your )?(account|identity|details)/i,
-    /enter your (login|user id|username)/i, /unlock (your )?account/i,
+    /password/i,
+    /passcode/i,
+    /login (credentials|details|id|info)/i,
+    /update your (password|pin|credentials)/i,
+    /verify your (account|identity|login)/i,
+    /apna (password|pin) (batayein|share|dein)/i,  // "tell us your password"
+    /confirm (your )?(account|identity|details)/i,
+    /enter your (login|user id|username)/i,
+    /unlock (your )?account/i,
+    /account verify (karein|karo)/i,        // "verify your account"
+    /\bcnic (number|details|copy)\b/i,      // CNIC — most critical in PK
+    /\bnational id\b/i,
+    /cnic share (karein|karo|bhejein)/i,
+    /\bATM (pin|card)\b/i,
+    /\bdebit card (details|number|pin)\b/i,
   ],
+
+  // OTP / verification code theft
   otp: [
-    /\botp\b/i, /one[- ]?time password/i, /share (the |your )?(code|otp)/i,
-    /verification code/i, /confirm (the |your )?otp/i, /enter the code (sent|received)/i,
+    /\botp\b/i,
+    /one[- ]?time (password|code)/i,
+    /share (the |your )?(code|otp)/i,
+    /verification code/i,
+    /confirm (the |your )?otp/i,
+    /code (batayein|batao|send karein)/i,   // "tell the code"
+    /code (bhejein|bhejo)/i,               // "send the code"
+    /4 (digit|handa) code/i,
+    /6 (digit|handa) code/i,
+    /secret code/i,
+    /SMS code/i,
+    /code jo aaya hai/i,                   // "the code that came"
+    /jazzcash code/i,
+    /easypaisa code/i,
   ],
+
+  // Payment / financial request — Pakistani methods
   payment: [
-    /processing (fee|charge)/i, /registration (fee|amount)/i, /security (deposit|amount)/i,
-    /advance (amount|payment)/i, /transfer the (amount|money)/i, /send (money|funds|payment)/i,
-    /\bupi\b/i, /paytm|phonepe|google pay|gpay/i, /bank (details|transfer)/i,
-    /card (number|cvv|details)/i, /account number/i, /ifsc/i, /pay first/i,
-    /fee to (release|claim|unlock)/i, /money to.*receive/i,
+    /processing (fee|charge)/i,
+    /registration (fee|amount)/i,
+    /security (deposit|amount|raqam)/i,
+    /advance (amount|payment|raqam)/i,
+    /transfer (the |karein |karo )?(amount|money|raqam|paisa)/i,
+    /send (money|funds|payment|paisa|raqam)/i,
+    /JazzCash (par|ko|account|wallet)/i,   // "on JazzCash"
+    /EasyPaisa (par|ko|account)/i,
+    /NayaPay (par|ko)/i,
+    /bank (transfer|account mein dal)/i,
+    /IBFT/i,                               // Pakistan interbank transfer
+    /raast (send|transfer)/i,              // Raast — Pakistan instant payment
+    /account number (dein|bhejein)/i,
+    /\batm se nikaalo\b/i,                  // "withdraw from ATM"
+    /card (number|details|cvv)/i,
+    /pay first/i,
+    /pehle pay (karein|karo)/i,            // "pay first"
+    /fee to (release|claim|unlock)/i,
+    /fee deni hogi/i,                      // "you will have to pay a fee"
+    /charges lagenge/i,                    // "charges will be applied"
   ],
+
+  // Bypass official channels — Pakistan
   bypass: [
-    /don'?t (tell|share) (anyone|this)/i, /keep (this|it) (confidential|secret|private)/i,
-    /contact me (directly|on whatsapp|on telegram|on instagram)/i,
-    /message (me|us) on (whatsapp|telegram|instagram|dms)/i,
-    /call this number/i, /don'?t call (support|customer care)/i,
-    /avoid (official|the) (channel|process|procedure)/i, /off.?the.?record/i,
+    /don'?t (tell|share) (anyone|this)/i,
+    /kisi ko mat (batana|bolo)/i,          // "don't tell anyone"
+    /secret (rakho|rakhein)/i,             // "keep it secret"
+    /keep (this|it) (confidential|secret|private)/i,
+    /contact me (directly|on whatsapp|on telegram)/i,
+    /WhatsApp (par|pe) message (karein|karo)/i,
+    /sirf WhatsApp pe/i,                   // "only on WhatsApp"
+    /call this number/i,
+    /is number pe call (karein|karo)/i,
+    /don'?t call (support|helpline|bank)/i,
+    /bank ko mat batana/i,                 // "don't tell the bank"
+    /helpline pe mat (jao|call karo)/i,
+    /off.?the.?record/i,
+    /matter ko private rakhein/i,
   ],
+
+  // Fake employment — Pakistan-specific job scam patterns
   employment: [
-    /work from home/i, /no (experience|skills needed)/i, /daily (salary|payout)/i,
-    /joining (bonus|amount)/i, /interview on (whatsapp|zoom|telegram)/i,
-    /earn per task/i, /copy.?paste jobs/i, /data entry.*(salary|earning)/i,
-    /free (training|computer)/i, /e?commerce (task|seller)/i, /enroll (now|today)/i,
+    /work from home/i,
+    /ghar se kaam/i,                       // "work from home" Urdu
+    /ghar baithe/i,                        // "sitting at home"
+    /no (experience|experience needed)/i,
+    /bina experience/i,
+    /daily (salary|payment|payout)/i,
+    /rozana (salary|payment|kamai)/i,
+    /joining (bonus|amount|fee)/i,
+    /interview on (whatsapp|zoom|telegram)/i,
+    /WhatsApp pe interview/i,
+    /earn per task/i,
+    /YouTube (like|subscribe|view) (karein|task)/i,  // YouTube like scam (common in PK)
+    /product (review|rating) task/i,
+    /Amazon (task|rating|review) job/i,
+    /copy.?paste (job|kaam)/i,
+    /data entry.*(salary|kamai)/i,
+    /online typing (job|kaam)/i,
+    /free (training|course|laptop)/i,
+    /enroll (now|today|abhi)/i,
+    /sirf (500|1000|2000) (deposit|fee) pay (karein|karo)/i, // "just pay 500 deposit"
   ],
+
+  // Investment / forex / crypto scam — very common in PK
   investment: [
-    /guaranteed returns/i, /double your (money|investment)/i,
-    /crypto (investment|trading|signals)/i, /bitcoin|ethereum|usdt/i,
-    /expert (trading|signals|tips)/i, /invest.*(daily|weekly) (return|profit)/i,
-    /stock (tips|recommendation)/i,     /mutual fund.*guaranteed/i,
-    /get rich/i, /early (access|investors)/i,
+    /guaranteed (returns|munafa|profit)/i,
+    /double your (money|investment)/i,
+    /crypto (investment|trading|signals)/i,
+    /bitcoin|ethereum|usdt|tether/i,
+    /forex (trading|signals|investment)/i,   // Forex scams huge in Pakistan
+    /\bMLM\b/i,                              // Multi-level marketing
+    /expert (trading|signals|tips)/i,
+    /invest.*(daily|weekly) (return|profit|munafa)/i,
+    /ROI (daily|weekly)/i,
+    /\bBinance\b.*guaranteed/i,
+    /\bolympus trader\b/i,
+    /panel (mein|pe) (invest|dal)/i,         // "invest in the panel"
+    /\bProfit (daily|weekly|monthly)\b/i,
+    /stock (tips|recommendation)/i,
+    /get rich/i,
+    /pyramid (scheme|plan)/i,
+    /referral (bonus|commission)/i,
+    /early (access|investors)/i,
+    /sirf\s*(?:PKR|Rs\.?)?\s*[\d,]+\s*(se|mein) (shuru|start)/i, // "start from just PKR X"
   ],
+
+  // Romance scam — Pakistan-specific
   romance: [
-    /hello (dear|sweet|beautiful)/i, /i (love|admire) you/i,
-    /buy me a gift/i, /send me.*(gift card|itunes|western union)/i,
-    /marry/i, /travel to (see|meet) you/i, /need money.*(visa|ticket|hospital)/i,
+    /hello (dear|sweet|beautiful|handsome|jaan|pyaare)/i,
+    /\bjaan\b/i,                             // "dear/darling" Urdu
+    /\bhabibi\b/i,                           // Arabic term of endearment used in PK
+    /i (love|like|admire) you/i,
+    /mujhe tumse (pyar|mohabbat)/i,          // "I love you" Urdu
+    /send me.*(gift card|western union|easypaisa|jazzcash)/i,
+    /need money.*(visa|ticket|hospital|operation)/i,
+    /paise bhejein.*(operation|hospital|emergency)/i,
+    /marry/i,
+    /rishta (bhejein|bhejo)/i,               // "send a marriage proposal"
+    /divorce.*(money|raqam)/i,
+    /widow.*(investment|help|money)/i,       // Widow scam
+    /widower.*(investment|help)/i,
   ],
+
+  // Tech support scam
   techSupport: [
-    /your (device|computer|pc) (has|is) (a )?(virus|infected|compromised)/i,
-    /windows support/i, /microsoft (support|technician)/i,
-    /call.*(this number|us immediately)/i, /remote (access|support)/i,
-    /your computer will be/i,
+    /your (device|computer|pc|mobile|phone) (has|is) (a )?(virus|infected|hacked|compromised)/i,
+    /apka (mobile|phone|device) (hack|virus|compromise) (ho gaya|hua)/i,
+    /windows support/i,
+    /microsoft (support|technician)/i,
+    /call.*(this number|us immediately|abhi call)/i,
+    /remote (access|support)/i,
+    /TeamViewer (install|download)/i,       // Remote access tool scam
+    /AnyDesk (install|download)/i,
+    /app install (karein|karo)/i,
+    /apna screen (share|dikhao)/i,          // "share your screen"
+    /phone ko (access|control) (dein|do)/i,
   ],
+
+  // Delivery / parcel scam
   delivery: [
-    /package (awaiting|held|failed)/i, /delivery (failed|attempted|pending)/i,
-    /reschedule (your )?delivery/i, /shipping (fee|charge)/i,
-    /\bparcel\b/i, /tracking (id|number)/i, /customs (fee|duty|charge)/i,
-    /confirm your (address|details) to (receive|get) (the )?(parcel|package)/i,
+    /package (awaiting|held|failed)/i,
+    /parcel (roka|rok)/i,                   // "parcel stopped/held"
+    /delivery (failed|attempted|pending)/i,
+    /\bparcel\b/i,
+    /Daraz (delivery|parcel|order)/i,       // Daraz.pk (biggest PK e-commerce)
+    /customs (fee|duty|charge|charges)/i,
+    /\bcustoms\b.*\bpay\b/i,
+    /shipping (fee|charge)/i,
+    /tracking (id|number)/i,
+    /TCS (parcel|delivery)/i,               // TCS courier Pakistan
+    /Leopards (parcel|delivery)/i,
+    /M&P (parcel|delivery)/i,               // M&P courier Pakistan
+    /Speedex (parcel|delivery)/i,
+    /Pakistan Post (parcel|delivery)/i,
+    /confirm your (address|details) to (receive|get)/i,
+    /parcel (release|nikalne) ke liye (fee|charges) dein/i,
+  ],
+
+  // NADRA / CNIC / Government document scam — Pakistan-specific
+  nadra: [
+    /\bCNIC\b/,                             // Computerised National Identity Card
+    /\bNICOP\b/,                            // National Identity Card for Overseas Pakistanis
+    /\bB-Form\b/i,
+    /NADRA (se|ki taraf se|office)/i,
+    /cnic (expired|expire|band|block)/i,
+    /cnic update (karein|karo)/i,
+    /apna cnic (bhejein|send)/i,
+    /cnic number (dein|batayein)/i,
+    /identity card (verification|verify)/i,
+    /sim (block|band) due to (cnic|identity)/i,  // SIM blocking scam
+    /biometric (update|verify)/i,           // Biometric verification scam
+    /PTA (ne|ki taraf se) sim (block|band)/i,    // PTA SIM block scam
+  ],
+
+  // BISP / Ehsaas / government welfare scam — massive in rural PK
+  welfarescam: [
+    /\bBISP\b/,                             // Benazir Income Support Programme
+    /\behsaas\b/i,                          // Ehsaas programme
+    /\bkafalat\b/i,                         // Kafalat program
+    /benazir (payment|raqam|paisa)/i,
+    /ehsaas (payment|raqam|program)/i,
+    /sarkari (madad|payment|raqam)/i,       // "government assistance"
+    /government (payment|raqam|madad)/i,
+    /8171/,                                 // BISP helpline number often spoofed
+    /bisp.*(register|verification|payment)/i,
+    /ap (ka|ki) ehsaas raqam (ready|tayar) hai/i, // "your Ehsaas amount is ready"
+    /verify (karein|karo) aur (raqam|paisa) lo/i, // "verify and take money"
   ],
 };
 
 const WEIGHTS = {
-  // code -> { base, dims: {dimKey: add} }
-  urgency: { base: 22, dims: { urgency: 4 } },
-  fear: { base: 20, dims: { socialEngineering: 3, urgency: 2 } },
-  authority: { base: 12, dims: { socialEngineering: 3, impersonation: 3 } },
-  reward: { base: 22, dims: { financial: 3, socialEngineering: 2 } },
-  tooGood: { base: 26, dims: { financial: 5 } },
-  credential: { base: 26, dims: { credential: 6, socialEngineering: 2 } },
-  otp: { base: 30, dims: { credential: 7 } },
-  payment: { base: 28, dims: { financial: 5, credential: 2 } },
-  bypass: { base: 18, dims: { socialEngineering: 3 } },
-  employment: { base: 22, dims: { financial: 3, socialEngineering: 2 } },
-  investment: { base: 26, dims: { financial: 5 } },
-  romance: { base: 20, dims: { socialEngineering: 4 } },
-  techSupport: { base: 24, dims: { socialEngineering: 3, urgency: 2 } },
-  delivery: { base: 18, dims: { financial: 2, socialEngineering: 2 } },
+  urgency:      { base: 22, dims: { urgency: 4 } },
+  fear:         { base: 22, dims: { socialEngineering: 3, urgency: 3 } },
+  authority:    { base: 14, dims: { socialEngineering: 3, impersonation: 3 } },
+  reward:       { base: 22, dims: { financialRisk: 3, socialEngineering: 2 } },
+  tooGood:      { base: 26, dims: { financialRisk: 5 } },
+  credential:   { base: 28, dims: { credentialRisk: 7, socialEngineering: 2 } },
+  otp:          { base: 32, dims: { credentialRisk: 8 } },
+  payment:      { base: 28, dims: { financialRisk: 5, credentialRisk: 2 } },
+  bypass:       { base: 20, dims: { socialEngineering: 4 } },
+  employment:   { base: 22, dims: { financialRisk: 3, socialEngineering: 2 } },
+  investment:   { base: 26, dims: { financialRisk: 5 } },
+  romance:      { base: 20, dims: { socialEngineering: 4 } },
+  techSupport:  { base: 24, dims: { socialEngineering: 3, urgency: 2 } },
+  delivery:     { base: 18, dims: { financialRisk: 2, socialEngineering: 2 } },
+  nadra:        { base: 30, dims: { credentialRisk: 6, socialEngineering: 3 } },  // HIGH — CNIC theft
+  welfarescam:  { base: 28, dims: { financialRisk: 4, socialEngineering: 4 } },   // HIGH — targets vulnerable
 };
 
 const SIGNAL_LABELS = {
-  urgency: 'Urgent Language',
-  fear: 'Fear / Threat Language',
-  authority: 'Authority Impersonation',
-  reward: 'Reward Bait',
-  tooGood: 'Too-Good-To-Be-True Claim',
-  credential: 'Credential Request',
-  otp: 'OTP / Verification Code Request',
-  payment: 'Payment / Financial Request',
-  bypass: 'Pressure to Bypass Normal Procedures',
-  employment: 'Fake Employment Offer Pattern',
-  investment: 'Investment Promise',
-  romance: 'Romance / False-Pretext Bait',
-  techSupport: 'Tech-Support Pattern',
-  delivery: 'Delivery / Parcel Pattern',
+  urgency:     'Urgent Language / Pressure',
+  fear:        'Fear / Threat Language',
+  authority:   'Authority Impersonation',
+  reward:      'Prize / Reward Bait',
+  tooGood:     'Too-Good-To-Be-True Claim',
+  credential:  'Credential / CNIC Request',
+  otp:         'OTP / Verification Code Request',
+  payment:     'Payment / Financial Request',
+  bypass:      'Pressure to Bypass Official Channels',
+  employment:  'Fake Job / Task Offer Pattern',
+  investment:  'Fake Investment Promise',
+  romance:     'Romance / False-Pretext Bait',
+  techSupport: 'Tech Support Scam Pattern',
+  delivery:    'Parcel / Delivery Scam Pattern',
+  nadra:       'CNIC / NADRA Identity Theft Attempt',
+  welfarescam: 'Government Welfare Scam (BISP/Ehsaas)',
 };
 
 const SIGNAL_EXPLANATIONS = {
-  urgency: 'The message creates pressure to act before the claim can be verified.',
-  fear: 'Threatening or frightening language is used to push a hasty decision.',
-  authority: 'The sender claims an official identity without proof of authenticity.',
-  reward: 'An unusually attractive reward is offered with little credible context.',
-  tooGood: 'The promised benefit is far above what legitimate offers typically provide.',
-  credential: 'The flow nudges the user toward sharing login or account credentials.',
-  otp: 'The message seeks a one-time password or verification code.',
-  payment: 'The flow steers the user toward a payment, transfer, or financial detail.',
-  bypass: 'The message asks the user to work around official channels and normal procedures.',
-  employment: 'The offer uses patterns common to fraudulent job and task-based schemes.',
-  investment: 'The returns promised are disproportionate to any legitimate instrument.',
-  romance: 'The message appears designed to build trust and then request money or gifts.',
-  techSupport: 'The message poses a technical problem to justify access or payment.',
-  delivery: 'The message invokes a parcel to encourage payment or personal details.',
+  urgency:     'Pressure to act before you can verify — a core scam tactic to prevent rational thinking.',
+  fear:        'Threat of account suspension, legal action, or SIM block to force immediate compliance.',
+  authority:   'The message claims to be from a trusted Pakistani bank, government body, or platform.',
+  reward:      'An attractive prize is offered — often to bait a "small fee" request that follows.',
+  tooGood:     'The promised return far exceeds what any legitimate financial product offers.',
+  credential:  'The message nudges toward sharing CNIC, login credentials, or ATM PIN.',
+  otp:         'Requesting a one-time code from JazzCash, EasyPaisa, or a bank is always a scam.',
+  payment:     'Steering toward a payment via JazzCash, EasyPaisa, IBFT, or Raast.',
+  bypass:      'Asking to keep the matter secret or move to WhatsApp to avoid official oversight.',
+  employment:  'Patterns common to fake task-based or typing-job scams popular in Pakistan.',
+  investment:  'Forex/crypto/MLM promises of guaranteed returns — illegal and fraudulent.',
+  romance:     'Building false emotional trust to extract money or gifts.',
+  techSupport: 'Claiming your device is hacked to gain remote access (TeamViewer/AnyDesk).',
+  delivery:    'Claiming a parcel is held to collect customs fees or payment details.',
+  nadra:       'Attempting to extract CNIC number, copy, or biometric data — serious identity theft risk.',
+  welfarescam: 'Impersonating BISP/Ehsaas to trick beneficiaries into sharing details or paying fees.',
 };
 
 const DIMENSION_DEFS = [
   { key: 'socialEngineering', label: 'Social Engineering', color: '#f59e0b' },
-  { key: 'linkRisk', label: 'Link Risk', color: '#f97316' },
-  { key: 'urgency', label: 'Urgency', color: '#ef4444' },
-  { key: 'credentialRisk', label: 'Credential Risk', color: '#a855f7' },
-  { key: 'financialRisk', label: 'Financial Risk', color: '#ec4899' },
+  { key: 'linkRisk',          label: 'Link Risk',           color: '#f97316' },
+  { key: 'urgency',           label: 'Urgency',             color: '#ef4444' },
+  { key: 'credentialRisk',    label: 'Credential Risk',     color: '#a855f7' },
+  { key: 'financialRisk',     label: 'Financial Risk',      color: '#ec4899' },
 ];
 
-// ─── Trusted official domains (false-positive protection) ────────────────────
-// These domains are known legitimate. A URL on these domains gets a "verified"
-// indicator and its score is reduced. This is NOT a guarantee of safety
-// (phishing via subdomains is still flagged), but prevents over-flagging
-// emails like "Your Amazon order has shipped" that mention amazon.com.
+// ─── Trusted official Pakistani domains (false-positive protection) ──────────
 const TRUSTED_DOMAINS = new Set([
-  'amazon.com','amazon.in','amazon.co.uk','amazon.de','amazon.fr',
-  'google.com','google.co.in','google.co.uk','accounts.google.com',
-  'gmail.com','youtube.com','maps.google.com',
-  'microsoft.com','outlook.com','live.com','office.com','microsoft365.com',
-  'apple.com','icloud.com','support.apple.com',
-  'paypal.com','paypal.me',
-  'facebook.com','instagram.com','whatsapp.com','meta.com','messenger.com',
-  'twitter.com','x.com','linkedin.com','github.com',
-  'sbi.co.in','onlinesbi.sbi','sbicard.com',
-  'hdfcbank.com','netbanking.hdfcbank.com',
-  'icicibank.com','axisbank.com','kotak.com',
-  'paytm.com','phonepe.com','gpay.app','upi.npci.org.in',
-  'flipkart.com','myntra.com','snapdeal.com',
-  'irctc.co.in','incometax.gov.in','uidai.gov.in','mca.gov.in',
-  'netflix.com','spotify.com','hotstar.com','primevideo.com',
-  'fedex.com','dhl.com','ups.com','usps.com','indiapost.gov.in',
-  'zoom.us','meet.google.com','teams.microsoft.com',
+  // Pakistani Banks (official)
+  'hbl.com','mcb.com.pk','ubl.com.pk','abl.com','meezanbank.com',
+  'bankalfalah.com','askaribank.com.pk','faysalbank.com','jsbl.com',
+  'nbp.com.pk','bop.com.pk','summit-bank.com.pk','smebank.com.pk',
+  'bok.com.pk','standardchartered.com.pk','habibmetro.com',
+  'silkbankltd.com','syndicatebank.com.pk',
+  // Pakistani mobile wallets / fintech
+  'jazzcash.com.pk','easypaisa.com.pk','nayapay.com','sadapay.com',
+  'upaisa.com','hblkonnect.com',
+  // Pakistani Government
+  'nadra.gov.pk','fbr.gov.pk','sbp.org.pk','pta.gov.pk','bisp.gov.pk',
+  'ehsaas.gov.pk','pakistan.gov.pk','fia.gov.pk','nab.gov.pk',
+  'moitt.gov.pk','pmdu.edu.pk',
+  // Pakistani Telecom
+  'jazz.com.pk','telenor.com.pk','zong.com.pk','ufone.com',
+  // Pakistani e-commerce / platforms
+  'daraz.pk','olx.com.pk','foodpanda.pk','careem.com',
+  // International (commonly impersonated in PK)
+  'amazon.com','google.com','microsoft.com','apple.com',
+  'paypal.com','facebook.com','instagram.com','whatsapp.com',
+  'youtube.com','tiktok.com','linkedin.com',
+  'fedex.com','dhl.com',
 ]);
 
-// Scam-specific domain patterns (beyond TLD checks)
+// Scam domain patterns for Pakistan
 const SCAM_DOMAIN_PATTERNS = [
-  /sbi[^.]*\.(xyz|top|online|site|club|info|tk|ml|ga|cf|gq)/i,
-  /hdfc[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /paytm[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /amazon[^.]*\.(xyz|top|online|site|club|info|tk|ml|cam)/i,
-  /paypal[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /google[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /microsoft[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /apple[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /govt?[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /bank[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
-  /income.?tax[^.]*\.(xyz|top|online|site|club)/i,
-  /(verify|secure|update|login|account|kyc)[^.]{0,20}\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /hbl[^.]*\.(xyz|top|online|site|club|info|tk|ml|ga|cf|gq)/i,
+  /mcb[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /ubl[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /meezan[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /alfalah[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /jazzcash[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /easypaisa[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /nadra[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /bisp[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /ehsaas[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /jazz[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /telenor[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /fbr[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /sbp[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /daraz[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /pakistan[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /govt[^.]*\.(xyz|top|online|site|club|info|tk|ml)/i,
+  /(verify|secure|update|login|account|cnic|kyc|biometric)[^.]{0,20}\.(xyz|top|online|site|club|info|tk|ml)/i,
 ];
 
 function isTrustedDomain(host) {
@@ -240,21 +526,24 @@ function isScamDomainPattern(host) {
   return false;
 }
 
-// ─── Phone number scam detection ─────────────────────────────────────────────
-// Scammers often embed unofficial contact numbers
+// ─── Phone number scam detection — Pakistan context ──────────────────────────
 function analyzePhoneNumbers(text) {
   const signals = [];
-  // WhatsApp / Telegram contact redirect (classic social engineering bypass)
-  if (/message\s+(me|us)\s+(on|via|at)?\s*(whatsapp|telegram|signal)/i.test(text) ||
-      /contact\s+(me|us)\s+(on|via|at)?\s*(whatsapp|telegram)/i.test(text) ||
-      /whatsapp\s+(me|us|at|number|no)/i.test(text)) {
-    signals.push({ label: 'WhatsApp Contact Redirect', severity: 'high', detail: 'Asking to move conversation to WhatsApp/Telegram avoids official channels and accountability.' });
+  // WhatsApp / Telegram redirect (most common bypass in PK)
+  if (/WhatsApp (par|pe|ko) (message|contact|call) (karein|karo)/i.test(text) ||
+      /message\s+(me|us)\s+(on|via|at)?\s*(whatsapp|telegram|signal)/i.test(text) ||
+      /sirf WhatsApp pe/i.test(text) ||
+      /contact.*whatsapp/i.test(text)) {
+    signals.push({ label: 'WhatsApp Contact Redirect', severity: 'high', detail: 'Redirecting to WhatsApp avoids official bank/government channels — classic scam bypass tactic in Pakistan.' });
   }
-  // Informal number formats with context suggesting action (call us NOW, reach on +91...)
-  const phoneInContext = /(\+91|0091|91)[-.\s]?\d{5}[-.\s]?\d{5}/.test(text) &&
-    /(call|contact|reach|message|ping|add)/i.test(text);
-  if (phoneInContext) {
-    signals.push({ label: 'Unverified Phone Contact Request', severity: 'medium', detail: 'An unverified phone number is promoted as the contact point, bypassing official support channels.' });
+  // Pakistani number format +92 with action verb
+  if (/(\+92|0092|0[3][0-9]{9})/.test(text) &&
+      /(call|contact|reach|message|whatsapp|add)/i.test(text)) {
+    signals.push({ label: 'Unverified Pakistani Number as Contact', severity: 'medium', detail: 'A +92 number is promoted as the contact point, bypassing official helplines.' });
+  }
+  // Spoofed helpline numbers (8171 BISP, 111-xxx-xxx bank patterns)
+  if (/8171/.test(text)) {
+    signals.push({ label: 'BISP Helpline Number (8171) Mentioned', severity: 'high', detail: 'Scammers frequently spoof the BISP 8171 helpline number to impersonate the government welfare programme.' });
   }
   return signals;
 }
@@ -392,27 +681,35 @@ export function analyzeUrl(url, context = '') {
     score += 22;
   }
 
-  // ── Brand mismatch (context-aware) ────────────────────────────────────────
+  // ── Brand mismatch (Pakistan-context-aware) ───────────────────────────────
   if (context) {
     const brandPatterns = [
-      { rx: /\bsbi\b/i, domain: 'sbi.co.in' },
-      { rx: /\bhdfc\b/i, domain: 'hdfcbank.com' },
-      { rx: /\bicici\b/i, domain: 'icicibank.com' },
-      { rx: /\baxis\b/i, domain: 'axisbank.com' },
-      { rx: /\bamazon\b/i, domain: 'amazon' },
-      { rx: /\bpaypal\b/i, domain: 'paypal.com' },
-      { rx: /\bpaytm\b/i, domain: 'paytm.com' },
-      { rx: /\bphonepe\b/i, domain: 'phonepe.com' },
-      { rx: /\bgoogle\b/i, domain: 'google.com' },
-      { rx: /\bmicrosoft\b/i, domain: 'microsoft.com' },
-      { rx: /\bapple\b/i, domain: 'apple.com' },
-      { rx: /\bnetflix\b/i, domain: 'netflix.com' },
-      { rx: /\bflipcart|flipkart\b/i, domain: 'flipkart.com' },
+      { rx: /\bHBL\b/,                      domain: 'hbl.com' },
+      { rx: /\bMCB\b/,                      domain: 'mcb.com.pk' },
+      { rx: /\bUBL\b/,                      domain: 'ubl.com.pk' },
+      { rx: /\bMeezan\b/i,                  domain: 'meezanbank.com' },
+      { rx: /\bBank Alfalah\b/i,            domain: 'bankalfalah.com' },
+      { rx: /\bJazzCash\b/i,                domain: 'jazzcash.com.pk' },
+      { rx: /\bEasyPaisa\b/i,               domain: 'easypaisa.com.pk' },
+      { rx: /\bNADRA\b/,                    domain: 'nadra.gov.pk' },
+      { rx: /\bBISP\b/,                     domain: 'bisp.gov.pk' },
+      { rx: /\bEhsaas\b/i,                  domain: 'ehsaas.gov.pk' },
+      { rx: /\bFBR\b/,                      domain: 'fbr.gov.pk' },
+      { rx: /\bSBP\b/,                      domain: 'sbp.org.pk' },
+      { rx: /\bPTA\b/,                      domain: 'pta.gov.pk' },
+      { rx: /\bDaraz\b/i,                   domain: 'daraz.pk' },
+      { rx: /\bJazz\b/,                     domain: 'jazz.com.pk' },
+      { rx: /\bTelenor\b/i,                 domain: 'telenor.com.pk' },
+      { rx: /\bamazon\b/i,                  domain: 'amazon.com' },
+      { rx: /\bpaypal\b/i,                  domain: 'paypal.com' },
+      { rx: /\bgoogle\b/i,                  domain: 'google.com' },
+      { rx: /\bmicrosoft\b/i,               domain: 'microsoft.com' },
+      { rx: /\bapple\b/i,                   domain: 'apple.com' },
     ];
     for (const { rx, domain } of brandPatterns) {
-      if (rx.test(context) && !host.includes(domain.replace('.com','').replace('.co.in','').replace('.sbi',''))) {
-        add('Brand / Domain Mismatch', 'danger', `Message references a known brand but the URL domain "${rootDomain}" does not match that brand's official address. This is the #1 sign of a phishing link.`);
-        score += 30;
+      if (rx.test(context) && !host.includes(domain.replace('.com.pk','').replace('.gov.pk','').replace('.org.pk','').replace('.pk','').replace('.com',''))) {
+        add('Brand / Domain Mismatch', 'danger', `Message references "${domain.split('.')[0].toUpperCase()}" but the URL domain "${rootDomain}" does not match the official address. This is the #1 sign of a phishing link.`);
+        score += 32;
         break;
       }
     }
@@ -502,20 +799,22 @@ export function analyzeContent(content, type = 'text') {
   if (urlMatches.length) seq.push('suspiciousLink');
   if (grammarSignal) seq.push('grammar');
 
-  // Category selection
+  // Category selection — Pakistan-calibrated priority
   let categoryId = 'unknown';
   const P = (s) => detected.includes(s);
-  if (P('otp')) categoryId = 'account_takeover';
-  else if (P('techSupport')) categoryId = 'tech_support';
-  else if (P('authority') && (P('credential') || P('otp') || P('payment'))) categoryId = 'impersonation';
-  else if (P('investment')) categoryId = 'investment_scam';
-  else if (P('employment')) categoryId = 'job_scam';
-  else if (P('delivery')) categoryId = 'delivery_scam';
-  else if (P('romance')) categoryId = 'romance';
-  else if (P('credential') && P('suspiciousLink')) categoryId = 'phishing';
-  else if (P('reward') || P('tooGood')) categoryId = 'fake_prize';
-  else if (P('payment')) categoryId = 'payment_scam';
-  else if (P('authority')) categoryId = 'impersonation';
+  if (P('nadra'))                                                     categoryId = 'account_takeover'; // CNIC theft = account takeover
+  else if (P('welfarescam'))                                          categoryId = 'fake_prize';       // BISP/Ehsaas scam
+  else if (P('otp'))                                                  categoryId = 'account_takeover';
+  else if (P('techSupport'))                                          categoryId = 'tech_support';
+  else if (P('authority') && (P('credential') || P('otp') || P('payment') || P('nadra'))) categoryId = 'impersonation';
+  else if (P('investment'))                                           categoryId = 'investment_scam';
+  else if (P('employment'))                                           categoryId = 'job_scam';
+  else if (P('delivery'))                                             categoryId = 'delivery_scam';
+  else if (P('romance'))                                              categoryId = 'romance';
+  else if (P('credential') && P('suspiciousLink'))                    categoryId = 'phishing';
+  else if (P('reward') || P('tooGood'))                               categoryId = 'fake_prize';
+  else if (P('payment'))                                              categoryId = 'payment_scam';
+  else if (P('authority'))                                            categoryId = 'impersonation';
 
   // Risk score calculation
   const grammarPct = Math.min(20, grammar.length * 6);
@@ -531,8 +830,13 @@ export function analyzeContent(content, type = 'text') {
   combo('payment', 'fear', 8);
   combo('employment', 'payment', 8);
   combo('investment', 'tooGood', 10);
+  combo('nadra', 'authority', 15);       // CNIC + authority = very dangerous
+  combo('nadra', 'fear', 12);            // CNIC theft under threat
+  combo('welfarescam', 'payment', 15);   // BISP scam + payment = critical
+  combo('welfarescam', 'otp', 15);       // BISP + OTP theft
+  combo('otp', 'payment', 12);           // JazzCash/EasyPaisa OTP scam
   // Phone redirect with payment/credential is very high risk
-  if (phoneSignals.length && (P('payment') || P('credential') || P('otp'))) comboBonus += 12;
+  if (phoneSignals.length && (P('payment') || P('credential') || P('otp') || P('nadra'))) comboBonus += 14;
 
   const urlBonus = Math.min(15, urlMatches.length * 6);
   let riskScore = Math.min(98, Math.round(rawScore + comboBonus + grammarPct + urlBonus));
@@ -564,14 +868,16 @@ export function analyzeContent(content, type = 'text') {
   if (text.length < 15 && !urlMatches.length) confidence = Math.min(confidence, 45);
   const confidenceLabel = confidence >= 80 ? 'HIGH' : confidence >= 55 ? 'MODERATE' : 'LOW';
 
-  // Requested information
+  // Requested information — Pakistan-specific
   const requestedInformation = [];
-  if (detected.includes('otp')) requestedInformation.push({ kind: 'OTP / verification code', sensitivity: 'CRITICAL' });
-  if (detected.includes('credential')) requestedInformation.push({ kind: 'Login / account credentials', sensitivity: 'CRITICAL' });
-  if (detected.includes('payment')) requestedInformation.push({ kind: 'Payment, transfer, or financial details', sensitivity: 'CRITICAL' });
-  if (/date of birth|dob|aadhaar|pan card|passport/i.test(text)) requestedInformation.push({ kind: 'Government ID / personal identity document', sensitivity: 'CRITICAL' });
-  if (/address|phone number|mobile number/i.test(text) && riskScore > 30) requestedInformation.push({ kind: 'Personal contact / address details', sensitivity: 'HIGH' });
-  if (/cvv|card number|expiry|debit card|credit card/i.test(text)) requestedInformation.push({ kind: 'Card / banking details', sensitivity: 'CRITICAL' });
+  if (P('otp'))        requestedInformation.push({ kind: 'OTP / JazzCash / EasyPaisa verification code', sensitivity: 'CRITICAL' });
+  if (P('nadra'))      requestedInformation.push({ kind: 'CNIC number / National Identity Card details', sensitivity: 'CRITICAL' });
+  if (P('credential')) requestedInformation.push({ kind: 'Login credentials / account password / ATM PIN', sensitivity: 'CRITICAL' });
+  if (P('payment'))    requestedInformation.push({ kind: 'Payment via JazzCash / EasyPaisa / bank transfer', sensitivity: 'CRITICAL' });
+  if (/cvv|card number|expiry|debit|credit card/i.test(text)) requestedInformation.push({ kind: 'Debit / credit card details', sensitivity: 'CRITICAL' });
+  if (/biometric|fingerprint|thumb impression/i.test(text))   requestedInformation.push({ kind: 'Biometric / fingerprint data', sensitivity: 'CRITICAL' });
+  if (/mobile number|phone number|sim number/i.test(text) && riskScore > 30) requestedInformation.push({ kind: 'Mobile / SIM number', sensitivity: 'HIGH' });
+  if (/address|ghar ka pata|residential/i.test(text) && riskScore > 30)      requestedInformation.push({ kind: 'Home address / residential details', sensitivity: 'HIGH' });
 
   // Manipulation tactics
   const tactics = [];
@@ -588,7 +894,7 @@ export function analyzeContent(content, type = 'text') {
   // Reasons (explainability)
   const reasons = [];
   let n = 1;
-  const reasonOrder = ['otp','credential','payment','fear','urgency','reward','tooGood','authority','bypass','employment','investment','romance','techSupport','delivery','suspiciousLink','grammar'];
+  const reasonOrder = ['otp','nadra','credential','welfarescam','payment','fear','urgency','reward','tooGood','authority','bypass','employment','investment','romance','techSupport','delivery','suspiciousLink','grammar'];
   for (const code of reasonOrder) {
     if (!seq.includes(code)) continue;
     const ev = (evidenceBySignal[code] || []).join(' · ');

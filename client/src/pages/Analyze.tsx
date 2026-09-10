@@ -21,12 +21,12 @@ const TABS: { id: TabId; label: string; icon: typeof FileText }[] = [
 ];
 
 const FALLBACK_SCENARIOS: Scenario[] = [
-  { id: 'fake-prize', title: 'Fake Prize', type: 'fake_prize', icon: 'gift', message: 'Congratulations! You have been selected to receive a cash prize of Rs. 50,000. Claim it by paying a small processing fee of Rs. 900: http://festivelucky2026.xyz/claim Hurry! Offer expires tonight!' },
-  { id: 'fake-job', title: 'Fake Job Offer', type: 'job_scam', icon: 'briefcase', message: 'URGENT VACANCY! Work from home and earn Rs. 2,000 per day. No experience needed. Message me on WhatsApp at +91 98XXXXXX21. Limited seats today only.' },
-  { id: 'bank-impersonation', title: 'Bank Impersonation', type: 'impersonation', icon: 'landmark', message: 'Your SBI account will be blocked within 24 hours unless you verify your identity. Login to update your KYC: http://sbi-online-verify.xyz/confirm. Do not tell anyone.' },
-  { id: 'delivery-scam', title: 'Delivery Scam', type: 'delivery_scam', icon: 'package', message: 'Your parcel from Amazon Express is pending. Pay customs fee of Rs. 450 to release. http://amz-parcel.top/track' },
-  { id: 'investment-scam', title: 'Investment Scam', type: 'investment_scam', icon: 'trending', message: 'Guaranteed 200% profit in 7 days! Join our crypto trading group. Double your money with Rs. 5,000 deposit. Limited slots. Act now!' },
-  { id: 'account-verification', title: 'Account Verification / OTP', type: 'account_takeover', icon: 'key', message: 'Your Paytm account has been flagged. OTP 482913 has been sent to your number. Share this OTP to confirm and unlock your account immediately.' },
+  { id: 'hbl-impersonation',   title: 'HBL Bank Impersonation',     type: 'impersonation',    icon: 'landmark',  message: 'Aapka HBL account 24 ghanton mein band ho jayega. Account block se bachne ke liye abhi apni CNIC aur ATM PIN verify karein. Link: http://hbl-secure-verify.xyz/confirm — Kisi ko mat batayein.' },
+  { id: 'bisp-welfare-scam',   title: 'BISP / Ehsaas Scam',         type: 'welfarescam',      icon: 'gift',      message: 'Pakistan Government ki taraf se khush khabri! Aapka Ehsaas Program mein Rs. 25,000 ki raqam tayar hai. Abhi apna CNIC number aur registered mobile number 8171 par bhejein. Jaldi karein, offer aaj raat tak valid hai.' },
+  { id: 'jazzcash-otp-scam',   title: 'JazzCash OTP Theft',         type: 'account_takeover', icon: 'key',       message: "Aapka JazzCash account suspicious activity ki wajah se band ho raha hai. Account unlock karne ke liye abhi apna 6-digit OTP code share karein jo aapke number par aaya hai. WhatsApp: +92 300 1234567." },
+  { id: 'fake-job-pakistan',   title: 'Fake Online Job Offer',      type: 'job_scam',         icon: 'briefcase', message: 'URGENT VACANCY! Ghar baithe kaam karein aur rozana Rs. 3,000 kamayen. Koi experience zaroori nahi. Sirf YouTube videos like aur subscribe karein. Pehle Rs. 500 registration fee JazzCash 0300-1234567 par bhejen.' },
+  { id: 'nadra-cnic-scam',     title: 'NADRA CNIC Verification Scam', type: 'account_takeover', icon: 'key',    message: 'NADRA ki taraf se notice: Aapka CNIC expire ho chuka hai aur aapki SIM 48 ghanton mein PTA ki taraf se block ho jayegi. Apna CNIC renew karne ke liye: http://nadra-cnic-update.online/verify' },
+  { id: 'forex-investment-scam', title: 'Forex / Crypto Investment Scam', type: 'investment_scam', icon: 'trending', message: 'Pakistan ka #1 Forex Trading Group! Expert signals se guaranteed 150% weekly return. Sirf Rs. 10,000 se shuru karein aur ek hafte mein double karein. WhatsApp: +92 321 9876543. Bitcoin, USDT, JazzCash sab accept.' },
 ];
 
 function isValidUrlInput(value: string): boolean {

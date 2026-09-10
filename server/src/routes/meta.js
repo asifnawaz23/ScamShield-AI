@@ -6,52 +6,52 @@ export const metaRouter = Router();
 
 const SCENARIOS = [
   {
-    id: 'fake-prize',
-    title: 'Fake Prize',
-    type: 'fake_prize',
-    icon: 'gift',
-    message:
-      'Congratulations! Your number has been selected to receive a cash prize of Rs. 50,000 in the "Festive Lucky Draw 2026". To claim your reward immediately, pay a small processing fee of Rs. 900 only. Claim now: http://festivelucky2026.xyz/claim Hurry! Offer expires tonight!',
-  },
-  {
-    id: 'fake-job',
-    title: 'Fake Job Offer',
-    type: 'job_scam',
-    icon: 'briefcase',
-    message:
-      'URGENT VACANCY! Work from home and earn Rs. 2,000 per day. No experience needed. Free training. To confirm your slot, pay a small registration fee and message me on WhatsApp at +91 98XXXXXX21. Limited seats available today only.',
-  },
-  {
-    id: 'bank-impersonation',
-    title: 'Bank Impersonation',
+    id: 'hbl-impersonation',
+    title: 'HBL Bank Impersonation',
     type: 'impersonation',
     icon: 'landmark',
     message:
-      'Your SBI account will be blocked within 24 hours unless you verify your identity. Login to update your KYC immediately: http://sbi-online-verify.xyz/confirm. Do not tell anyone about this. Your account will be blocked otherwise.',
+      'Aapka HBL account 24 ghanton mein band ho jayega. Account block se bachne ke liye abhi apni CNIC aur ATM PIN verify karein. Link: http://hbl-secure-verify.xyz/confirm — Kisi ko mat batayein.',
   },
   {
-    id: 'delivery-scam',
-    title: 'Delivery Scam',
-    type: 'delivery_scam',
-    icon: 'package',
+    id: 'bisp-welfare-scam',
+    title: 'BISP / Ehsaas Scam',
+    type: 'welfarescam',
+    icon: 'gift',
     message:
-      'Your parcel from Amazon Express is pending at our facility. Release your package by paying a customs fee of Rs. 450. Reschedule now to avoid return. Track and pay here: http://amz-parcel.top/track',
+      'Pakistan Government ki taraf se khush khabri! Aapka Ehsaas Program mein Rs. 25,000 ki raqam tayar hai. Abhi apna CNIC number aur registered mobile number 8171 par bhejein aur apni raqam hasil karein. Jaldi karein, offer aaj raat tak valid hai.',
   },
   {
-    id: 'investment-scam',
-    title: 'Investment Scam',
-    type: 'investment_scam',
-    icon: 'trending',
-    message:
-      'Guaranteed 200% profit in 7 days! Join our crypto trading elite group. Expert signals daily. Double your money with a minimum deposit of Rs. 5,000. Limited slots for early investors. Act now!',
-  },
-  {
-    id: 'account-verification',
-    title: 'Account Verification / OTP',
+    id: 'jazzcash-otp-scam',
+    title: 'JazzCash OTP Theft',
     type: 'account_takeover',
     icon: 'key',
     message:
-      "Your Paytm account has been flagged for suspicious activity. OTP 482913 has been sent to your number. Share this OTP to confirm it's you and unlock your account immediately.",
+      "Aapka JazzCash account suspicious activity ki wajah se band ho raha hai. Account unlock karne ke liye abhi apna 6-digit OTP code share karein jo aapke number par aaya hai. Customer care: +92 300 1234567 par WhatsApp karein.",
+  },
+  {
+    id: 'fake-job-pakistan',
+    title: 'Fake Online Job Offer',
+    type: 'job_scam',
+    icon: 'briefcase',
+    message:
+      'URGENT VACANCY! Ghar baithe kaam karein aur rozana Rs. 3,000 kamayen. Koi experience zaroori nahi. Sirf YouTube videos like aur subscribe karein. Pehle Rs. 500 registration fee JazzCash 0300-1234567 par bhejen. Limited seats — aaj hi enroll karein!',
+  },
+  {
+    id: 'nadra-cnic-scam',
+    title: 'NADRA CNIC Verification Scam',
+    type: 'account_takeover',
+    icon: 'key',
+    message:
+      'NADRA ki taraf se notice: Aapka CNIC expire ho chuka hai aur aapki SIM 48 ghanton mein PTA ki taraf se block ho jayegi. Apna CNIC renew karne ke liye is link par click karein aur apni CNIC copy upload karein: http://nadra-cnic-update.online/verify',
+  },
+  {
+    id: 'forex-investment-scam',
+    title: 'Forex / Crypto Investment Scam',
+    type: 'investment_scam',
+    icon: 'trending',
+    message:
+      'Pakistan ka #1 Forex Trading Group! Expert signals se guaranteed 150% weekly return. Sirf Rs. 10,000 se shuru karein aur ek hafte mein double karein. Limited slots — aaj hi WhatsApp karein: +92 321 9876543. Bitcoin, USDT, JazzCash sab accept hai.',
   },
 ];
 
