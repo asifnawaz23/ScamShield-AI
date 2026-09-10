@@ -1,0 +1,26 @@
+{
+  "name": "scamshield-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ScamShield AI — explainable scam intelligence for everyone",
+  "scripts": {
+    "setup": "npm install && npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -n API,WEB -c cyan,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "preview": "npm --prefix client run preview",
+    "test": "npm --prefix server test",
+    "test:engine": "npm --prefix server run test:engine",
+    "test:api": "npm --prefix server run test:api",
+    "test:reputation": "npm --prefix server run test:reputation"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "puppeteer": "^25.8.0"
+  }
+}

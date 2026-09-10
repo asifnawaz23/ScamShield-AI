@@ -1,0 +1,46 @@
+services:
+  # ── Backend API ─────────────────────────────────────────────────────────
+  - type: web
+    name: scamshield-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm --prefix server install
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      # ── Required ──────────────────────────────────────────────────────
+      - key: JWT_SECRET
+        generateValue: true      # Render auto-generates a secure random value
+      # ── Set these in the Render dashboard (do NOT commit real values) ──
+      - key: CORS_ORIGIN
+        sync: false              # Set manually: https://your-app.vercel.app
+      - key: AI_API_KEY
+        sync: false              # OpenAI-compatible key (leave empty for demo mode)
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      # ── Reputation APIs (all optional) ────────────────────────────────
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: GOOGLE_SAFE_BROWSING_API_KEY
+        sync: false
+      - key: ABUSEIPDB_API_KEY
+        sync: false
+      # ── Email OTP ─────────────────────────────────────────────────────
+      - key: EMAIL_PROVIDER
+        value: console           # Change to "resend" and add RESEND_API_KEY for production
+      - key: RESEND_API_KEY
+        sync: false
+      # ── Google OAuth (optional) ───────────────────────────────────────
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false

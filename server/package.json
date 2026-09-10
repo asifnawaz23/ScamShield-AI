@@ -1,0 +1,24 @@
+{
+  "name": "scamshield-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ScamShield AI analysis backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "test": "node --test tests/engine.test.js tests/reputation.test.js tests/api.test.js",
+    "test:engine": "node --test tests/engine.test.js",
+    "test:api": "node --test tests/api.test.js",
+    "test:reputation": "node --test tests/reputation.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "nodemailer": "^9.0.5",
+    "resend": "^6.20.0"
+  }
+}

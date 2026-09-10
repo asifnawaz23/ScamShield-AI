@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output
+dist/
+client/dist/
+dist-ssr/
+*.local
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database files
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Demo video files (excluded from repo)
+client/public/demo-v2.html
+client/public/demo-video.html
+client/public/video-shots/
+docs/hackathon/*.mp4
+render-*.js
+capture-*.js
+_frames*/
+node_modules/
+scamshield-demo*.mp4
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+.vite
+coverage
+.freebuff/
+*.mp4
+
+# TypeScript cache
+*.tsbuildinfo
