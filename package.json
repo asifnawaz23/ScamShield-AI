@@ -5,6 +5,7 @@
   "description": "ScamShield AI — explainable scam intelligence for everyone",
   "scripts": {
     "setup": "npm install && npm --prefix server install && npm --prefix client install",
+    "build:client": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
     "dev": "concurrently -n API,WEB -c cyan,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
@@ -19,8 +20,5 @@
   "devDependencies": {
     "concurrently": "^9.0.1"
   },
-  "dependencies": {},
-  "optionalDependencies": {
-    "puppeteer": "^25.8.0"
-  }
+  "dependencies": {}
 }

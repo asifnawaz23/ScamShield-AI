@@ -1,30 +1,25 @@
-import Database from 'libsql';
+import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Uses the same libSQL engine locally (file: URL) and in production
-// (libsql:// URL backed by Turso Cloud). When TURSO_DATABASE_URL is set the
-// database lives in the cloud so it survives serverless cold starts.
+// Uses Node's built-in SQLite engine — zero native dependencies, which makes
+// the module safe for serverless bundling (esbuild/nft). Serverless caches are
+// per-instance and ephemeral: writes survive the lifetime of a warm instance.
+// Swap this module for a cloud SQLite later if persistent hosting is needed.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const remoteUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.NETLIFY);
 
-let dbOpts = {};
-if (process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN) {
-  dbOpts.authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
+const dbPath = IS_SERVERLESS
+  ? '/tmp/scamshield.db'
+  : join(__dirname, '..', '..', 'data', 'scamshield.db');
+
+if (!IS_SERVERLESS) {
+  mkdirSync(dirname(dbPath), { recursive: true });
 }
 
-const dbUrl = remoteUrl ?? (() => {
-  if (process.env.VERCEL) {
-    return 'file:/tmp/scamshield.db';
-  }
-  const dataDir = join(__dirname, '..', '..', 'data');
-  mkdirSync(dataDir, { recursive: true });
-  return `file:${join(dataDir, 'scamshield.db')}`;
-})();
-
-export const db = new Database(dbUrl, dbOpts);
+export const db = new DatabaseSync(dbPath);
 
 // Schema is created at module load so route modules that seed at import time
 // always find the tables ready.

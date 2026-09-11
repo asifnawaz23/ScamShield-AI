@@ -6,43 +6,54 @@ export function sanitizeText(input) {
   return input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, 8000);
 }
 
+function clientIp(req) {
+  return (
+    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    req.headers['ntg-ip'] ||
+    req.socket?.remoteAddress ||
+    'unknown'
+  );
+}
+
+const serverlessRateLimitOptions = {
+  keyGenerator: clientIp,
+  validate: { ip: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+};
+
 export const analyzeLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...serverlessRateLimitOptions,
   message: { error: 'Too many analysis requests. Please slow down and try again shortly. (Rate limited)' },
 });
 
 export const imageLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 15,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...serverlessRateLimitOptions,
   message: { error: 'Too many image analyses. Please try again shortly. (Rate limited)' },
 });
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...serverlessRateLimitOptions,
   message: { error: 'Too many sign-in attempts. Please wait a few minutes and try again.' },
 });
 
 export const otpSendLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...serverlessRateLimitOptions,
   message: { error: 'Too many verification code requests for this device. Please wait a while and try again.' },
 });
 
 export const otpVerifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...serverlessRateLimitOptions,
   message: { error: 'Too many verification attempts. Please request a new code and try again later.' },
 });
 

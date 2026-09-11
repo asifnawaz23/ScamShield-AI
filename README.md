@@ -176,8 +176,8 @@ All tests use Node.js built-in `node:test` — no external test framework needed
 
 See [`DEPLOY.md`](DEPLOY.md) for step-by-step instructions.
 
-- **Backend:** [Render.com](https://render.com) (free tier) — see [`render.yaml`](render.yaml)
 - **Frontend:** [Netlify](https://netlify.com) (free tier) — see [`netlify.toml`](netlify.toml)
+- **Backend:** Netlify Functions (serverless Express via `serverless-http`) — served from the **same domain** as the frontend, so no CORS or extra hosting is needed. Single deploy runs everything.
 
 ---
 

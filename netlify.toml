@@ -1,10 +1,18 @@
 [build]
-  base = "client"
-  command = "npm install && npm run build"
-  publish = "dist"
+  command = "npm run build:client"
+  publish = "client/dist"
 
 [build.environment]
-  VITE_API_BASE = "https://scam-shield-lr70qj3c2-muhammad-asif-nawazs-projects.vercel.app"
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "server/netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
 
 [[redirects]]
   from = "/*"
