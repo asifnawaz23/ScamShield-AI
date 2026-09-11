@@ -1,16 +1,27 @@
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'libsql';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Uses the same libSQL engine locally (file: URL) and in production
+// (libsql:// URL backed by Turso Cloud). When TURSO_DATABASE_URL is set the
+// database lives in the cloud so it survives serverless cold starts.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, '..', '..', 'data');
-mkdirSync(dataDir, { recursive: true });
+const remoteUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
 
-const dbPath = join(dataDir, 'scamshield.db');
+let dbOpts = {};
+if (process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN) {
+  dbOpts.authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
+}
 
-export const db = new DatabaseSync(dbPath);
+const dbUrl = remoteUrl ?? (() => {
+  const dataDir = join(__dirname, '..', '..', 'data');
+  mkdirSync(dataDir, { recursive: true });
+  return `file:${join(dataDir, 'scamshield.db')}`;
+})();
+
+export const db = new Database(dbUrl, dbOpts);
 
 // Schema is created at module load so route modules that seed at import time
 // always find the tables ready.
