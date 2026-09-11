@@ -1,13 +1,15 @@
-import { DatabaseSync } from 'node:sqlite';
+import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Uses Node's built-in SQLite engine — zero native dependencies, which makes
-// the module safe for serverless bundling (esbuild/nft). Serverless caches are
-// per-instance and ephemeral: writes survive the lifetime of a warm instance.
-// Swap this module for a cloud SQLite later if persistent hosting is needed.
+// Node's built-in SQLite engine — zero native dependencies, which makes the
+// module safe for serverless bundling. The import is resolved dynamically so
+// Netlify's esbuild/nft bundlers keep the "node:" prefix (they otherwise
+// rewrite `import 'node:sqlite'` into `require('sqlite')`, which fails).
+const builtinRequire = createRequire(import.meta.url);
+const { DatabaseSync } = builtinRequire([`${'node'}:sqlite`].join(''));
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.NETLIFY);
 
