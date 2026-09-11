@@ -16,6 +16,9 @@ if (process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN) {
 }
 
 const dbUrl = remoteUrl ?? (() => {
+  if (process.env.VERCEL) {
+    return 'file:/tmp/scamshield.db';
+  }
   const dataDir = join(__dirname, '..', '..', 'data');
   mkdirSync(dataDir, { recursive: true });
   return `file:${join(dataDir, 'scamshield.db')}`;
