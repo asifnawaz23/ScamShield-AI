@@ -302,6 +302,13 @@ async function callLLM(systemPrompt, userContent, isVision = false) {
       model: process.env.AI_MODEL || 'gpt-4o-mini',
       messages,
       temperature: 0.1, // Lower temperature = more consistent, evidence-bound output
+      // Cap output tokens so we stay under free-tier per-minute output limits
+      // (e.g. Groq qwen free tier = 1000 OTPM). The JSON report fits comfortably.
+      max_tokens: Number(process.env.AI_MAX_TOKENS) || 800,
+      // Disable chain-of-thought on reasoning models (Qwen) — it wastes output
+      // tokens (blowing the OTPM limit) and pollutes the JSON. Ignored by models
+      // that don't support it.
+      reasoning_effort: 'none',
       response_format: { type: 'json_object' },
     }),
     signal: AbortSignal.timeout(Number(process.env.AI_TIMEOUT_MS) || 20000),
@@ -316,7 +323,75 @@ async function callLLM(systemPrompt, userContent, isVision = false) {
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('AI returned empty content');
 
-  return JSON.parse(content);
+  return parseModelJson(content);
+}
+
+/**
+ * OCR-only vision call: ask the vision model to TRANSCRIBE the text in an image
+ * and return it as plain text. This keeps output small (well under free-tier
+ * output-token limits) and reliable — our heuristic engine then scores the text.
+ * Returns the extracted text (possibly empty string) or throws on API error.
+ */
+async function extractTextFromImage(dataUrl) {
+  const messages = [
+    {
+      role: 'system',
+      content:
+        'You are an OCR engine. Transcribe ALL visible text in the image exactly as it appears, preserving numbers, links, and wording. Output ONLY the transcribed text — no commentary, no analysis. If there is no readable text, output an empty response.',
+    },
+    {
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: dataUrl } },
+        { type: 'text', text: 'Transcribe all the text visible in this screenshot.' },
+      ],
+    },
+  ];
+
+  const res = await fetch(`${BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.AI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: process.env.AI_MODEL || 'gpt-4o-mini',
+      messages,
+      temperature: 0,
+      max_tokens: Number(process.env.AI_OCR_MAX_TOKENS) || 700,
+      reasoning_effort: 'none',
+    }),
+    signal: AbortSignal.timeout(Number(process.env.AI_TIMEOUT_MS) || 20000),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Vision OCR error ${res.status}: ${body.slice(0, 160)}`);
+  }
+  const data = await res.json();
+  let text = data.choices?.[0]?.message?.content || '';
+  // Strip any stray reasoning/markdown the model may add.
+  text = String(text).replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```/g, '').trim();
+  return text;
+}
+
+/**
+ * Robustly extract a JSON object from a model's reply. Reasoning models (e.g.
+ * Qwen) may wrap output in <think>…</think> or ```json fences before the JSON,
+ * which breaks a naive JSON.parse. Strip those and parse the first {...} block.
+ */
+function parseModelJson(raw) {
+  let s = String(raw);
+  // Remove <think>…</think> reasoning blocks.
+  s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  // Remove markdown code fences.
+  s = s.replace(/```(?:json)?/gi, '');
+  // Extract the first balanced-looking JSON object.
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    s = s.slice(start, end + 1);
+  }
+  return JSON.parse(s.trim());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,55 +441,36 @@ export async function analyzeWithFallback({ content, type = 'text' }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function analyzeImageWithFallback({ dataUrl, visibleText }) {
-  if (process.env.AI_API_KEY) {
+  // Preferred path: use the vision model ONLY to transcribe the screenshot text
+  // (small, reliable output), then score that text with our strong heuristic
+  // engine. This avoids asking a rate-limited free model for a huge JSON report,
+  // and reuses the same deterministic detection used for pasted text.
+  if (process.env.AI_API_KEY && dataUrl) {
     try {
-      // For images, we still run heuristic on any visible text first
-      const heuristic = visibleText
-        ? analyzeContent(visibleText, 'text')
-        : analyzeContent('', 'image');
-
-      const evidenceContext = visibleText
-        ? buildEvidenceContext(heuristic, visibleText, 'image')
-        : 'No visible text was provided. Analyze the image directly.';
-
-      const imagePart = { type: 'image_url', image_url: { url: dataUrl } };
-      const textPart = {
-        type: 'text',
-        text: `This is a screenshot of a suspicious message. Analyze its visual content.
-
-Pre-computed heuristic analysis of the visible text (if any):
-${evidenceContext}
-
-Return the structured JSON per the schema. If you can read text in the image, extract it and include it in your evidence.`,
-      };
-
-      let parsed = null;
-      for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-        try {
-          const raw = await callLLM(buildSystemPrompt(), [imagePart, textPart], true);
-          if (validateAiPayload(raw, heuristic.riskScore)) {
-            parsed = normalize(raw, heuristic);
-          }
-        } catch (e) {
-          console.warn(`[ai/image] Attempt ${attempt + 1} failed:`, e.message);
-        }
-      }
-
-      if (parsed) {
+      const ocrText = await extractTextFromImage(dataUrl);
+      const combined = [visibleText, ocrText].filter((t) => t && t.trim()).join('\n').trim();
+      if (combined) {
+        const heuristic = analyzeContent(combined, 'text');
         return {
           result: {
-            ...parsed,
+            ...heuristic,
+            inputSummary: combined.slice(0, 90),
             visualScan: {
-              label: 'AI vision scan',
-              note: 'Message content was extracted directly from the image by the configured AI vision model and analyzed against known scam patterns.',
+              label: 'AI vision scan (text extracted)',
+              note: 'Text was read directly from the screenshot by the AI vision model, then analyzed against known scam patterns by the detection engine.',
+              extractedText: ocrText.slice(0, 500),
             },
           },
           mode: 'ai',
           aiUsed: true,
+          visualSource: 'ai_ocr',
         };
       }
+      // OCR found nothing readable — fall through to the honest "not assessed"
+      // path below (never a fake "safe").
+      console.warn('[scamshield] Image OCR returned no readable text.');
     } catch (err) {
-      console.warn('[scamshield] Image AI failed, falling back:', err.message);
+      console.warn('[scamshield] Image OCR failed, falling back:', err.message);
     }
   }
 
@@ -435,17 +491,41 @@ Return the structured JSON per the schema. If you can read text in the image, ex
     };
   }
 
+  // No visible text AND no vision AI → we genuinely cannot read the screenshot.
+  // Returning a low "safe" score here is misleading and dangerous (a scam
+  // screenshot would look safe). Return an HONEST "cannot assess" result instead.
   const base = analyzeContent('', 'image');
   return {
     result: {
       ...base,
-      visualScan: {
-        label: 'Illustrative demo scan',
-        note: 'No visible text was supplied and no AI model is configured. A real deployment would use OCR or a vision-capable AI model to extract text from the screenshot automatically.',
+      riskScore: 0,
+      riskLevel: 'unknown',
+      riskLabel: 'NOT ASSESSED',
+      riskTone: 'yellow',
+      category: { id: 'unknown', label: 'Not Assessed', icon: 'shield', tone: 'yellow' },
+      outcomeText: 'COULD NOT READ THE IMAGE — PASTE THE VISIBLE TEXT TO ANALYZE',
+      summary:
+        'This screenshot could not be analyzed automatically because no readable text was provided and image text-extraction (OCR/vision AI) is not enabled on this deployment. This is NOT a verdict that the message is safe. Type or paste the message text shown in the screenshot to get a real assessment.',
+      confidence: 0,
+      confidenceLabel: 'NONE',
+      reasons: [],
+      recommendedActions: [
+        'Type or paste the visible text from the screenshot into the "Visible text" box and analyze again.',
+        'Do NOT treat this as a safe result — no analysis was performed on the image content.',
+      ],
+      evidenceBasis: {
+        evidence: ['No readable text was supplied and no image text-extraction is configured.'],
+        inference: [],
+        uncertainty: ['The content of the screenshot is completely unknown to the analyzer.'],
       },
+      visualScan: {
+        label: 'Not assessed — text required',
+        note: 'No visible text was supplied and no AI vision model is configured, so the screenshot could not be read. Paste the message text to analyze it. (Enable AI_API_KEY with a vision model for automatic image reading.)',
+      },
+      notAssessed: true,
     },
     mode: 'demo',
     aiUsed: false,
-    visualSource: 'illustrative',
+    visualSource: 'not_assessed',
   };
 }
