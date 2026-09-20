@@ -1,6 +1,9 @@
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
+
+// Heavy 3D (three.js) — lazy-loaded so it never blocks the form render.
+const GlobeScene = lazy(() => import('../three/GlobeScene').then((m) => ({ default: m.GlobeScene })));
 
 /** Angular HUD corner brackets, like a sci-fi targeting frame. */
 function HudCorners() {
@@ -35,12 +38,15 @@ export function AuthShell({
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4 py-12">
       {/* ── Cyber background ─────────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        {/* deep radial glow like a distant globe */}
+        {/* deep radial glow behind the globe */}
         <div className="absolute right-[-15%] top-1/2 h-[720px] w-[720px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.16),rgba(34,211,238,0.04)_40%,transparent_70%)]" />
-        <div className="absolute right-[-10%] top-1/2 hidden h-[520px] w-[520px] -translate-y-1/2 rounded-full border border-accent/15 md:block" />
-        <div className="absolute right-[-4%] top-1/2 hidden h-[360px] w-[360px] -translate-y-1/2 rounded-full border border-accent/10 md:block" />
-        {/* dotted grid + scan sheen */}
-        <div className="absolute inset-0 bg-grid-faint bg-[length:38px_38px] opacity-60" />
+        {/* dotted grid */}
+        <div className="absolute inset-0 bg-grid-faint bg-[length:38px_38px] opacity-50" />
+        {/* real animated 3D globe — right side, like the reference. Lazy-loaded;
+            renders nothing on no-WebGL / reduced-motion (CSS glow above remains). */}
+        <Suspense fallback={null}>
+          <GlobeScene className="absolute right-[-18%] top-1/2 h-[820px] w-[820px] -translate-y-1/2 md:right-[-6%] lg:right-0" />
+        </Suspense>
         <div className="absolute -left-40 -top-40 h-[420px] w-[420px] rounded-full bg-accent/10 blur-[150px]" />
         <div className="absolute -bottom-48 left-1/4 h-[420px] w-[420px] rounded-full bg-violet/10 blur-[160px]" />
       </div>
