@@ -46,6 +46,12 @@ export function Login() {
     return () => clearTimer();
   }, []);
 
+  // If already signed in (e.g. after a Google popup completes), leave the auth
+  // page immediately instead of staying on the login form.
+  useEffect(() => {
+    if (user) navigate(from, { replace: true });
+  }, [user, from, navigate]);
+
   useEffect(() => {
     let active = true;
     if (otpStep && resendIn > 0) {
