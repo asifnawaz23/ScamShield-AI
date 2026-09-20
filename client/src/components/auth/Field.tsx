@@ -17,9 +17,9 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
         ref={ref}
         id={id}
         className={cx(
-          'w-full rounded-xl border bg-ink-900/60 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition-colors',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-          error ? 'border-risk-red/50' : 'border-white/10 hover:border-white/20',
+          'w-full rounded-lg border bg-ink-950/50 px-4 py-3 text-sm text-white placeholder:text-slate-500 transition-all',
+          'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60 focus:bg-accent/[0.04] focus:shadow-[0_0_16px_-4px_rgba(34,211,238,0.5)]',
+          error ? 'border-risk-red/60' : 'border-accent/25 hover:border-accent/45',
           className,
         )}
         {...props}
