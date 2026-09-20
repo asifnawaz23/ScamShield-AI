@@ -211,19 +211,43 @@ export function Analyze() {
           <div className="rounded-3xl border border-white/10 bg-ink-900/50 p-5 backdrop-blur">
             {tab === 'text' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                <label htmlFor="message-input" className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Suspicious message, email, offer, or SMS
-                </label>
-                <textarea
-                  id="message-input"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="Paste a suspicious message, email, job offer, payment request, or SMS…"
-                  rows={9}
-                  className="w-full resize-y rounded-xl border border-white/10 bg-ink-950/80 px-4 py-3 text-sm leading-relaxed text-white placeholder:text-slate-600 focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20"
-                />
+                <div className="mb-2 flex items-center gap-2">
+                  <FileText className="size-4 text-accent" aria-hidden="true" />
+                  <label htmlFor="message-input" className="block text-xs font-semibold uppercase tracking-widest text-slate-300">
+                    Paste the suspicious message here
+                  </label>
+                </div>
+
+                {/* Glowing input surface — clear, inviting drop area for new users */}
+                <div
+                  className={cx(
+                    'group relative rounded-2xl border-2 bg-ink-950/70 p-1 transition-all duration-300',
+                    text
+                      ? 'border-accent/50 shadow-[0_0_28px_-8px_rgba(34,211,238,0.55)]'
+                      : 'border-dashed border-accent/30 hover:border-accent/50 hover:shadow-[0_0_28px_-10px_rgba(34,211,238,0.45)]',
+                  )}
+                >
+                  <textarea
+                    id="message-input"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Paste a suspicious SMS, email, WhatsApp message, job offer, prize, or payment request…&#10;&#10;e.g.  'Aapka HBL account band ho jayega. Abhi OTP aur CNIC verify karein: http://hbl-verify.xyz'"
+                    rows={9}
+                    autoFocus
+                    className="w-full resize-y rounded-xl bg-transparent px-4 py-3 text-sm leading-relaxed text-white placeholder:text-slate-500 focus:outline-none"
+                  />
+                  {!text && (
+                    <div className="pointer-events-none absolute right-4 top-3 hidden items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-accent sm:flex">
+                      <Sparkles className="size-3" aria-hidden="true" />
+                      Paste to start
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <p className="text-[11px] text-slate-500">{text.length} characters</p>
+                  <p className={cx('font-mono text-[11px]', text.length > 0 ? 'text-accent' : 'text-slate-500')}>
+                    {text.length} characters{text.length > 0 && text.length < 15 ? ' · add a bit more for better accuracy' : ''}
+                  </p>
                   <Button variant="primary" size="sm" onClick={() => runAnalysis('text', text)} disabled={!canAnalyze || loading}>
                     <Sparkles className="size-4" aria-hidden="true" />
                     Analyze text
@@ -291,18 +315,18 @@ export function Analyze() {
                   )}
                 </div>
                 {imageName && (
-                  <p className="text-[11px] text-slate-500">Loaded: {imageName}. Provide the visible text to improve the demo assessment.</p>
+                  <p className="text-[11px] text-slate-500">Loaded: {imageName}. We&apos;ll read the text from your screenshot automatically — or paste it below to help.</p>
                 )}
                 <label htmlFor="visible-text" className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Visible text in the screenshot <span className="text-slate-600 normal-case">(optional)</span>
+                  Visible text in the screenshot <span className="text-slate-600 normal-case">(optional — improves accuracy)</span>
                 </label>
                 <textarea
                   id="visible-text"
                   value={visibleText}
                   onChange={(e) => setVisibleText(e.target.value)}
-                  placeholder="The message text as it appears in the screenshot…"
+                  placeholder="Optional: type the message text as it appears in the screenshot…"
                   rows={4}
-                  className="w-full resize-y rounded-xl border border-white/10 bg-ink-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20"
+                  className="w-full resize-y rounded-xl border border-accent/25 bg-ink-950/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 transition-all hover:border-accent/40 focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:shadow-[0_0_18px_-6px_rgba(34,211,238,0.5)]"
                 />
                 <div className="flex items-center justify-between gap-3">
                   <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
@@ -329,8 +353,8 @@ export function Analyze() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && canAnalyze && runAnalysis('url', url)}
-                    placeholder="https://…"
-                    className="flex-1 rounded-xl border border-white/10 bg-ink-950/80 px-4 py-3 font-mono text-sm text-white placeholder:text-slate-600 focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    placeholder="https://suspicious-link.example…"
+                    className="flex-1 rounded-xl border border-accent/25 bg-ink-950/70 px-4 py-3 font-mono text-sm text-white placeholder:text-slate-500 transition-all hover:border-accent/40 focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:shadow-[0_0_18px_-6px_rgba(34,211,238,0.5)]"
                   />
                   <Button variant="primary" size="sm" onClick={() => runAnalysis('url', url)} disabled={!canAnalyze || loading}>
                     <Link2 className="size-4" aria-hidden="true" />
