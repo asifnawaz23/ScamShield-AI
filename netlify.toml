@@ -1,10 +1,16 @@
 [build]
   base = "/"
-  command = "npm run build:client"
+  # Install client deps INCLUDING devDependencies (vite/tailwind/typescript live
+  # there and are required to build), build the SPA, then install the server
+  # runtime deps for the function bundle. --include=dev is explicit so a
+  # production NODE_ENV never strips the build tools ("tsc/vite not found").
+  command = "npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install --omit=dev"
   publish = "client/dist"
 
 [build.environment]
   NODE_VERSION = "22"
+  # Ensure npm installs devDependencies during the build even if NODE_ENV=production.
+  NPM_FLAGS = "--include=dev"
 
 [functions]
   directory = "server/netlify/functions"
