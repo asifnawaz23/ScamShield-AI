@@ -7,7 +7,7 @@ import { EmptyState } from '../components/ui/Feedback';
 import { useToast } from '../components/ui/Feedback';
 import { apiHistory, apiDeleteAnalysis, apiClearHistory } from '../lib/api';
 import { listAnalysisLocal, removeAnalysisLocal, clearAnalysisStore } from '../lib/analysisStore';
-import { timeAgo } from '../lib/utils';
+import { timeAgo, categoryLabel } from '../lib/utils';
 import type { HistoryItem, RiskLevel } from '../types';
 
 export function HistoryPage() {
@@ -79,7 +79,7 @@ export function HistoryPage() {
           <SectionLabel>Analysis history</SectionLabel>
           <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">History</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Past analyses are stored briefly. Only short summaries and reports are kept — never the raw messages.
+            Past analyses are stored so you can revisit them. We keep a short summary (up to ~90 characters of the input), the generated report, and metadata — not the full original message.
           </p>
         </div>
         {items && items.length > 0 && (
@@ -118,7 +118,7 @@ export function HistoryPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-bold text-white">{item.riskScore}</span>
                         <Badge tone={r.tone}>{r.label}</Badge>
-                        <Badge tone="violet">{item.category}</Badge>
+                        <Badge tone="violet">{categoryLabel(item.category)}</Badge>
                       </div>
                       <p className="mt-1 truncate text-xs text-slate-500">{item.inputSummary}</p>
                     </div>
@@ -153,9 +153,9 @@ export function HistoryPage() {
       <div className="mt-8 flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-slate-400">
-          <span className="font-semibold text-slate-300">Privacy-first history.</span> Raw message content is not stored.
-          Only a short summary, the generated report, and metadata are kept. You can delete anything at any time.
-          History is stored locally in your browser when the backend is offline.
+          <span className="font-semibold text-slate-300">Privacy-first history.</span> We store a short input summary
+          (up to ~90 characters), the generated report, and metadata — not the full original message. You can delete
+          anything at any time. History is stored locally in your browser when the backend is offline.
         </p>
       </div>
     </div>

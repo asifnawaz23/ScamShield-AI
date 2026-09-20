@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AuthUser } from '../types';
 import {
-  apiGoogleConfig, apiLogin, apiMe, apiSignup, apiGoogleDemo, apiSendOtp, apiSignupSendOtp, apiVerifyOtp, apiLogout, setAuthToken,
+  apiGoogleConfig, apiLogin, apiMe, apiSignup, apiSendOtp, apiSignupSendOtp, apiVerifyOtp,
+  apiVerifyEmail, apiResendVerification, apiLogout, setAuthToken,
 } from '../lib/api';
-import type { SendOtpResult } from '../lib/api';
+import type { SendOtpResult, SignupResult } from '../lib/api';
+import { clearAnalysisStore } from '../lib/analysisStore';
 
 const AUTH_USER_KEY = 'scamshield:auth-user';
 
@@ -21,12 +23,13 @@ interface AuthContextValue {
   ready: boolean;
   googleEnabled: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  register: (name: string, email: string, password: string) => Promise<AuthUser>;
+  register: (name: string, email: string, password: string) => Promise<SignupResult>;
+  verifyEmail: (token: string) => Promise<AuthUser>;
+  resendVerification: (email: string) => Promise<{ ok: boolean; message: string }>;
   sendOtp: (email: string) => Promise<SendOtpResult>;
   sendSignupOtp: (name: string, email: string, password: string) => Promise<SendOtpResult>;
   verifyOtp: (email: string, code: string) => Promise<AuthUser>;
   openGoogleLogin: () => Promise<void>;
-  loginWithGoogleDemo: () => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -39,6 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback((token: string, nextUser: AuthUser) => {
     setAuthToken(token);
+    // If a DIFFERENT account is signing in on this browser, drop any locally
+    // cached analyses so User B never sees User A's cached reports.
+    try {
+      const prevRaw = localStorage.getItem(AUTH_USER_KEY);
+      const prev = prevRaw ? (JSON.parse(prevRaw) as AuthUser) : null;
+      if (prev && prev.id !== nextUser.id) {
+        clearAnalysisStore();
+        localStorage.removeItem('scamshield:hero-report');
+      }
+    } catch {
+      // ignore
+    }
     try {
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
     } catch {
@@ -117,14 +132,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
-  const register = useCallback(
-    async (name: string, email: string, password: string) => {
-      const { token, user: nextUser } = await apiSignup(name, email, password);
-      persist(token, nextUser);
+  // Password signup no longer auto-logs-in: the account is created unverified
+  // and the user must click the emailed verification link first.
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    return apiSignup(name, email, password);
+  }, []);
+
+  const verifyEmail = useCallback(
+    async (token: string) => {
+      const { token: sessionToken, user: nextUser } = await apiVerifyEmail(token);
+      persist(sessionToken, nextUser);
       return nextUser;
     },
     [persist],
   );
+
+  const resendVerification = useCallback(async (email: string) => {
+    return apiResendVerification(email);
+  }, []);
 
   const sendOtp = useCallback(async (email: string) => {
     const result = await apiSendOtp(email);
@@ -156,12 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.open(url, 'scamshield-google', `width=${w},height=${h},left=${left},top=${top}`);
   }, []);
 
-  const loginWithGoogleDemo = useCallback(async () => {
-    const { token, user: nextUser } = await apiGoogleDemo();
-    persist(token, nextUser);
-    return nextUser;
-  }, [persist]);
-
   const logout = useCallback(() => {
     apiLogout().catch(() => undefined);
     setAuthToken(null);
@@ -170,12 +189,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    // Clear cached per-user data so the next account never sees the previous
+    // user's analyses/history (state isolation between accounts).
+    try {
+      clearAnalysisStore();
+      localStorage.removeItem('scamshield:hero-report');
+    } catch {
+      // ignore
+    }
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, ready, googleEnabled, login, register, sendOtp, sendSignupOtp, verifyOtp, openGoogleLogin, loginWithGoogleDemo, logout }),
-    [user, ready, googleEnabled, login, register, sendOtp, sendSignupOtp, verifyOtp, openGoogleLogin, loginWithGoogleDemo, logout],
+    () => ({ user, ready, googleEnabled, login, register, verifyEmail, resendVerification, sendOtp, sendSignupOtp, verifyOtp, openGoogleLogin, logout }),
+    [user, ready, googleEnabled, login, register, verifyEmail, resendVerification, sendOtp, sendSignupOtp, verifyOtp, openGoogleLogin, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

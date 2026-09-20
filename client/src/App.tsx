@@ -16,6 +16,7 @@ const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.P
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
 const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })));
 const AuthCallback = lazy(() => import('./pages/AuthCallback').then((m) => ({ default: m.AuthCallback })));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then((m) => ({ default: m.VerifyEmail })));
 
 function Fallback() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="*" element={<Landing />} />
           </Routes>
         </Suspense>

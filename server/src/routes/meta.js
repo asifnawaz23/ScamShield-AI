@@ -55,7 +55,18 @@ const SCENARIOS = [
   },
 ];
 
-seedScenarios(SCENARIOS);
+// Seed demo scenarios once, behind a shared promise so concurrent serverless
+// requests don't race. Called from the app's DB-readiness gate (after initDb).
+let seedPromise = null;
+export function ensureScenariosSeeded() {
+  if (!seedPromise) {
+    seedPromise = seedScenarios(SCENARIOS).catch((err) => {
+      seedPromise = null; // allow a retry on next request if it failed
+      console.error('[meta] seed scenarios failed:', err.message);
+    });
+  }
+  return seedPromise;
+}
 
 metaRouter.get('/health', (_req, res) => {
   res.json({
@@ -67,29 +78,56 @@ metaRouter.get('/health', (_req, res) => {
   });
 });
 
-metaRouter.get('/demo-scenarios', (_req, res) => {
-  res.json({ ok: true, scenarios: getSeedScenarios().map((s) => ({
-    id: s.id, title: s.title, type: s.type, icon: s.icon, message: s.message,
-  })) });
+metaRouter.get('/demo-scenarios', async (_req, res, next) => {
+  try {
+    const scenarios = await getSeedScenarios();
+    res.json({
+      ok: true,
+      scenarios: scenarios.map((s) => ({
+        id: s.id, title: s.title, type: s.type, icon: s.icon, message: s.message,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-metaRouter.get('/history', optionalAuth, (_req, res) => {
-  const items = _req.user ? listAnalyses(_req.user.id) : [];
-  res.json({ ok: true, items });
+metaRouter.get('/history', optionalAuth, async (req, res, next) => {
+  try {
+    const items = req.user ? await listAnalyses(req.user.id) : [];
+    res.json({ ok: true, items });
+  } catch (err) {
+    next(err);
+  }
 });
 
-metaRouter.get('/history/:id', (req, res) => {
-  const item = getAnalysis(req.params.id);
-  if (!item) return res.status(404).json({ error: 'Analysis not found.' });
-  res.json({ ok: true, analysis: item });
+// SECURITY: ownership-enforced. requireAuth guarantees req.user, and
+// getAnalysis(id, userId) only returns a row that belongs to that user.
+// This closes the IDOR where any UUID holder could read any report.
+metaRouter.get('/history/:id', requireAuth, async (req, res, next) => {
+  try {
+    const item = await getAnalysis(req.params.id, req.user.id);
+    if (!item) return res.status(404).json({ error: 'Analysis not found.' });
+    res.json({ ok: true, analysis: item });
+  } catch (err) {
+    next(err);
+  }
 });
 
-metaRouter.delete('/history/:id', requireAuth, (req, res) => {
-  deleteAnalysis(req.params.id, req.user.id);
-  res.json({ ok: true });
+metaRouter.delete('/history/:id', requireAuth, async (req, res, next) => {
+  try {
+    await deleteAnalysis(req.params.id, req.user.id);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
-metaRouter.delete('/history', requireAuth, (req, res) => {
-  clearAnalyses(req.user.id);
-  res.json({ ok: true });
+metaRouter.delete('/history', requireAuth, async (req, res, next) => {
+  try {
+    await clearAnalyses(req.user.id);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });

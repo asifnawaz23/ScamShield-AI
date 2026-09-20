@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Shield, ScanSearch, ArrowRight, Sparkles, Activity, BrainCircuit, Route, MessageSquareHeart, Lock, FileSearch, Eye, LayoutDashboard, LogIn } from 'lucide-react';
-import { ShieldScene } from '../components/three/ShieldScene';
+// Three.js is heavy (~600 kB). Lazy-load the decorative 3D scene so it becomes
+// its own chunk and never blocks the initial Landing render / other routes.
+const ShieldScene = lazy(() => import('../components/three/ShieldScene').then((m) => ({ default: m.ShieldScene })));
 import { PhoneMockup } from '../components/scan/PhoneMockup';
 import { ScanOverlay } from '../components/scan/ScanOverlay';
 import { Button, Badge, Magnetic } from '../components/ui/primitives';
@@ -20,7 +23,7 @@ const FEATURES = [
   { icon: ScanSearch, title: 'Deep signal extraction', desc: 'Urgency, reward bait, authority impersonation, credential requests and link risk analyzed in seconds.', gradient: 'from-violet/15 to-transparent' },
   { icon: Route, title: 'Attack-chain insight', desc: 'See what could happen next if you engage — a defensive simulation, never instructions.', gradient: 'from-rose-500/10 to-transparent' },
   { icon: MessageSquareHeart, title: 'Safe reply generator', desc: 'Politely decline an unwanted request without revealing a single sensitive detail.', gradient: 'from-emerald-500/10 to-transparent' },
-  { icon: Lock, title: 'Privacy-first', desc: 'Your content is analyzed without being stored as raw messages. No secrets, no password harvesting.', gradient: 'from-cyan-500/10 to-transparent' },
+  { icon: Lock, title: 'Privacy-first', desc: 'We keep only a short summary and the report — not your full message. No secrets, no password harvesting.', gradient: 'from-cyan-500/10 to-transparent' },
   { icon: FileSearch, title: 'Any format, one place', desc: 'Paste text, upload a screenshot, or drop a URL — messages, emails, job offers and payment requests.', gradient: 'from-orange-500/10 to-transparent' },
 ];
 
@@ -166,7 +169,9 @@ export function Landing() {
     <div ref={ref}>
       <section className="relative min-h-[92vh] overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <ShieldScene className="absolute right-[-10%] top-1/2 hidden h-[560px] w-[560px] -translate-y-1/2 lg:block xl:right-0" interactive={!reduced} />
+          <Suspense fallback={null}>
+            <ShieldScene className="absolute right-[-10%] top-1/2 hidden h-[560px] w-[560px] -translate-y-1/2 lg:block xl:right-0" interactive={!reduced} />
+          </Suspense>
         </div>
 
         <motion.div

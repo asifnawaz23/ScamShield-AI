@@ -20,6 +20,9 @@ const serverlessRateLimitOptions = {
   validate: { ip: false },
   standardHeaders: true,
   legacyHeaders: false,
+  // Allow the test suite to bypass rate limiting (it makes many requests from a
+  // single loopback IP). Never set this flag in production.
+  skip: () => process.env.DISABLE_RATE_LIMIT === '1',
 };
 
 export const analyzeLimiter = rateLimit({
@@ -55,6 +58,14 @@ export const otpVerifyLimiter = rateLimit({
   limit: 30,
   ...serverlessRateLimitOptions,
   message: { error: 'Too many verification attempts. Please request a new code and try again later.' },
+});
+
+// Resend-verification-email abuse protection.
+export const verifyResendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  ...serverlessRateLimitOptions,
+  message: { error: 'Too many verification emails requested. Please wait a few minutes and try again.' },
 });
 
 export function validateType(type) {

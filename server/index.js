@@ -4,7 +4,8 @@ import { initDb } from './src/db/db.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
-initDb();
+// Ensure the schema exists before accepting traffic (initDb is async on libSQL).
+await initDb();
 const app = createApp();
 
 app.listen(PORT, () => {

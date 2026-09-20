@@ -41,9 +41,9 @@ When deploying ScamShield AI in production, ensure you:
 
 ScamShield AI is designed with privacy-first principles:
 
-- **Raw messages are never stored** — Only summaries and generated reports are persisted
+- **Full messages are not stored** — Only a short input summary (up to ~90 characters), the generated report, and metadata are persisted
 - **No telemetry or tracking** — No user data is sent to third parties
-- **Local database** — All data stays on your server via SQLite
+- **Database** — Turso (libSQL) in production; an embedded libSQL file for local development. History is scoped to the owning account.
 - **Optional AI** — The app works fully in demo mode with zero external API calls
 
 ## Authentication Security

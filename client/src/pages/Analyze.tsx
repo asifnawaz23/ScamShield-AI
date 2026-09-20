@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, ImagePlus, Link2, LayoutGrid, Sparkles, Upload, ShieldAlert, Info, X } from 'lucide-react';
-import { ScanOverlay } from '../components/scan/ScanOverlay';
+import { ScanOverlay, toneForScore } from '../components/scan/ScanOverlay';
 import { Button, Badge, GlassCard, SectionLabel } from '../components/ui/primitives';
 import { ErrorState } from '../components/ui/Feedback';
 import { useToast } from '../components/ui/Feedback';
-import { apiAnalyze, apiAnalyzeImage, apiScenarios } from '../lib/api';
+import { apiAnalyze, apiAnalyzeUrl, apiAnalyzeImage, apiScenarios } from '../lib/api';
 import { saveAnalysisLocal } from '../lib/analysisStore';
 import { cx } from '../lib/utils';
 import type { Scenario } from '../types';
@@ -61,6 +61,7 @@ export function Analyze() {
   const [stage, setStage] = useState(0);
   const [done, setDone] = useState(false);
   const [resultLine, setResultLine] = useState<string | null>(null);
+  const [resultTone, setResultTone] = useState<'green' | 'yellow' | 'orange' | 'red'>('green');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -89,7 +90,8 @@ export function Analyze() {
           window.setTimeout(() => {
             setDone(true);
             setLoading(false);
-            setResultLine(`Threat assessment — ${analysis.riskScore} / 100 · ${analysis.riskLabel}`);
+            setResultTone(toneForScore(analysis.riskScore));
+            setResultLine(`Risk assessment — ${analysis.riskScore} / 100 · ${analysis.riskLabel}`);
             setTimeout(() => {
               navigate(`/results/${analysis.id}`, { state: { analysis } });
             }, 1100);
@@ -113,7 +115,7 @@ export function Analyze() {
           setError('That does not look like a valid web address. Please include the full URL (e.g. https://example.com).');
           return;
         }
-        apiAnalyze(payload, 'url').then((r) => finish(r.analysis)).catch(() => handleError('Could not analyze that URL. Please check your connection and try again.'));
+        apiAnalyzeUrl(payload).then((r) => finish(r.analysis)).catch(() => handleError('Could not analyze that URL. Please check your connection and try again.'));
       } else if (type === 'image') {
         if (!payload) {
           setLoading(false);
@@ -386,8 +388,8 @@ export function Analyze() {
             <ShieldAlert className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" />
             <div className="text-xs leading-relaxed text-slate-400">
               <span className="font-semibold text-slate-300">Confidential by design.</span>{' '}
-              Your uploaded content is processed for analysis and is not intentionally retained. This demo does not store the raw
-              message text — only a short summary and the generated report.
+              Your content is processed for analysis. We keep a short input summary (up to ~90 characters), the generated
+              report, and metadata for your history — not the full original message. Uploaded images are not stored as raw files.
             </div>
           </div>
         </div>
@@ -435,7 +437,7 @@ export function Analyze() {
         </div>
       </div>
 
-      <ScanOverlay visible={loading || done} stage={stage} done={done} resultLine={resultLine} />
+      <ScanOverlay visible={loading || done} stage={stage} done={done} resultLine={resultLine} tone={resultTone} />
     </div>
   );
 }

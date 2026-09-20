@@ -110,9 +110,10 @@ User Input (text / URL / screenshot)
 | **Animation** | Framer Motion |
 | **3D / WebGL** | Three.js, @react-three/fiber |
 | **Charts** | Recharts |
-| **Backend** | Node.js ≥22.5, Express 4 |
-| **Database** | SQLite (built-in `node:sqlite`) |
-| **Auth** | HMAC-SHA256 JWT, scrypt, OTP |
+| **Backend** | Node.js ≥22.5, Express 4 (Netlify Function via `serverless-http`) |
+| **Database** | Turso (libSQL) — durable serverless SQL; embedded libSQL file for local dev |
+| **Auth** | HMAC-SHA256 JWT, scrypt, OTP, clickable email verification, Google OAuth |
+| **Email** | Brevo transactional API |
 | **AI** | Any OpenAI-compatible endpoint |
 | **Testing** | Node.js built-in test runner |
 
@@ -149,12 +150,14 @@ See [`.env.example`](.env.example) for all variables. Key ones:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `JWT_SECRET` | ✅ Yes | Long random string for token signing |
+| `JWT_SECRET` | ✅ Yes | Long random string (≥32 chars) for token signing. **Required in production** — the server refuses to start with a missing/placeholder secret. |
 | `AI_API_KEY` | Optional | OpenAI-compatible key — leave empty for demo mode |
 | `VIRUSTOTAL_API_KEY` | Optional | Free tier: 4 req/min |
 | `GOOGLE_SAFE_BROWSING_API_KEY` | Optional | Free tier: 10k req/day |
 | `ABUSEIPDB_API_KEY` | Optional | Free tier: 1k req/day |
-| `RESEND_API_KEY` | Optional | For email OTP delivery |
+| `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | Production | Durable Turso database (embedded file locally) |
+| `BREVO_API_KEY` + `EMAIL_FROM` | Production | Transactional email (OTP + verification links) |
+| `APP_PUBLIC_URL` | Production | Base URL for email verification links |
 | `CORS_ORIGIN` | Production | Your frontend URL |
 
 ---
@@ -176,8 +179,9 @@ All tests use Node.js built-in `node:test` — no external test framework needed
 
 See [`DEPLOY.md`](DEPLOY.md) for step-by-step instructions.
 
-- **Frontend:** [Netlify](https://netlify.com) (free tier) — see [`netlify.toml`](netlify.toml)
-- **Backend:** Netlify Functions (serverless Express via `serverless-http`) — served from the **same domain** as the frontend, so no CORS or extra hosting is needed. Single deploy runs everything.
+- **Frontend + Backend:** [Netlify](https://netlify.com) (free tier) — the SPA and the Express API (a Netlify Function via `serverless-http`) share the **same domain**, so there's no CORS or extra hosting. Single deploy runs everything. See [`netlify.toml`](netlify.toml).
+- **Database:** [Turso](https://turso.tech) (libSQL, free tier) — durable across serverless instances. Local dev uses an embedded libSQL file automatically.
+- **Email:** [Brevo](https://www.brevo.com) transactional API for OTP + clickable email verification.
 
 ---
 
@@ -208,7 +212,7 @@ The specs represent the genuine development process — not retroactive document
 
 ## Privacy & Safety
 
-- Raw message text is **never stored** — only a 90-character summary
+- The full original message is **not stored** — only a short input summary (up to ~90 characters), the generated report, and metadata
 - Analysis results are saved per user account (sign-in required for persistence)
 - All secrets are environment-variable only — never in code
 - AI is instructed never to accuse the sender or provide attack instructions

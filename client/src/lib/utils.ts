@@ -73,3 +73,33 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
+
+/**
+ * Canonical category-ID → human label mapping.
+ *
+ * Server history stores `category` as an internal id (e.g. "account_takeover").
+ * The UI must never show these raw ids. Use categoryLabel() everywhere a
+ * category is rendered (dashboard, history, charts, badges) so labels stay
+ * consistent regardless of whether data came from the API or local fallback.
+ */
+const CATEGORY_LABELS: Record<string, string> = {
+  phishing: 'Phishing',
+  fake_prize: 'Fake Prize',
+  job_scam: 'Job Scam',
+  investment_scam: 'Investment Scam',
+  payment_scam: 'Payment Scam',
+  impersonation: 'Impersonation',
+  account_takeover: 'Account Takeover',
+  delivery_scam: 'Delivery Scam',
+  romance: 'Romance / Social Engineering',
+  tech_support: 'Tech Support Scam',
+  unknown: 'Unknown Suspicious Pattern',
+};
+
+export function categoryLabel(idOrLabel: string | null | undefined): string {
+  if (!idOrLabel) return 'Unknown';
+  // If it's already a known id, map it. Otherwise assume it's already a label
+  // (the local-storage fallback stores the human label) and return as-is.
+  if (CATEGORY_LABELS[idOrLabel]) return CATEGORY_LABELS[idOrLabel];
+  return idOrLabel;
+}

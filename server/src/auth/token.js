@@ -1,6 +1,55 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const SECRET = process.env.JWT_SECRET || 'scamshield-dev-secret-change-me';
+/**
+ * Resolve the JWT signing secret with a hard production guard.
+ *
+ * SECURITY: previously this fell back to a hardcoded string
+ * ('scamshield-dev-secret-change-me') whenever JWT_SECRET was unset — which
+ * meant anyone who read the public source could forge tokens on a misconfigured
+ * production deploy. Now:
+ *   - production (NODE_ENV=production OR NETLIFY/VERCEL serverless):
+ *       a real JWT_SECRET is REQUIRED. Missing, too short, or the known
+ *       placeholder → throw at startup so the deploy fails loudly instead of
+ *       silently running insecure.
+ *   - development/test: a local dev secret is allowed for convenience, but a
+ *     warning is logged so it is never mistaken for production-grade.
+ */
+const PLACEHOLDER_SECRETS = new Set([
+  'change-me-to-a-long-random-string',
+  'scamshield-dev-secret-change-me',
+  '',
+]);
+
+function resolveSecret() {
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    Boolean(process.env.NETLIFY) ||
+    Boolean(process.env.VERCEL);
+  const configured = process.env.JWT_SECRET || '';
+
+  if (isProduction) {
+    if (PLACEHOLDER_SECRETS.has(configured) || configured.length < 32) {
+      throw new Error(
+        '[scamshield] JWT_SECRET is missing, too short, or a placeholder in production. ' +
+          'Set a strong random JWT_SECRET (>= 32 chars). ' +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
+      );
+    }
+    return configured;
+  }
+
+  // Development / test only.
+  if (PLACEHOLDER_SECRETS.has(configured) || configured.length < 32) {
+    console.warn(
+      '[scamshield] Using an insecure development JWT secret. ' +
+        'This is only allowed outside production. Set JWT_SECRET for real deployments.',
+    );
+    return 'scamshield-dev-only-secret-not-for-production';
+  }
+  return configured;
+}
+
+const SECRET = resolveSecret();
 
 function b64url(input) {
   return Buffer.from(input).toString('base64url');

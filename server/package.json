@@ -17,12 +17,12 @@
     "test:reputation": "node --test tests/reputation.test.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
     "nodemailer": "^9.0.5",
-    "resend": "^6.20.0",
     "serverless-http": "^4.0.0"
   }
 }

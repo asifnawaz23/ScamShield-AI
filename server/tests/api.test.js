@@ -9,14 +9,21 @@
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { createApp } from '../src/app.js';
-import { initDb } from '../src/db/db.js';
+
+// Use an isolated in-memory libSQL database for the test run so tests never
+// touch dev/production data. Set BEFORE importing modules that open the DB.
+process.env.SCAMSHIELD_DB_MEMORY = '1';
+process.env.DISABLE_RATE_LIMIT = '1';
+delete process.env.TURSO_DATABASE_URL;
 
 let server;
 let baseUrl;
 
 before(async () => {
-  initDb();
+  // Dynamic imports so the env flag above is applied before db.js initializes.
+  const { createApp } = await import('../src/app.js');
+  const { initDb } = await import('../src/db/db.js');
+  await initDb();
   const app = createApp();
   await new Promise((resolve) => {
     server = app.listen(0, '127.0.0.1', () => {
@@ -258,22 +265,199 @@ describe('GET /api/history (unauthenticated)', () => {
 // GET /api/history/:id — not found
 // ---------------------------------------------------------------------------
 
-describe('GET /api/history/:id', () => {
-  test('returns 404 for non-existent analysis id', async () => {
-    const { status } = await get('/api/history/nonexistent-id-12345');
-    assert.equal(status, 404);
-  });
+// Register a user, verify their email via the token service, and return a
+// working bearer token. Signup no longer auto-logs-in, so tests must verify.
+async function signupVerified(email, name = 'Test User') {
+  await post('/api/auth/signup', { email, password: 'longpassword123', name });
+  const { issueVerificationToken } = await import('../src/auth/verification.js');
+  const { getUserByEmail } = await import('../src/db/db.js');
+  const user = await getUserByEmail(email);
+  const rawToken = await issueVerificationToken(user.id);
+  const { body } = await post('/api/auth/verify-email', { token: rawToken });
+  return body.token;
+}
 
-  test('stores and retrieves an analysis by id', async () => {
+describe('GET /api/history/:id (ownership enforced)', () => {
+  const signup = (email) => signupVerified(email, 'History Owner');
+
+  test('unauthenticated request is rejected (401), never leaks a report', async () => {
+    // Create an anonymous analysis (no token).
     const { body: postBody } = await post('/api/analyze', {
       type: 'text',
       content: 'URGENT: Verify your account to avoid permanent suspension.',
     });
     const id = postBody.id;
-    const { status, body } = await get(`/api/history/${id}`);
+    // Fetching it with no auth must NOT return the report (IDOR fix).
+    const { status } = await get(`/api/history/${id}`);
+    assert.equal(status, 401, 'unauthenticated history fetch must be rejected');
+  });
+
+  test('returns 404 for non-existent analysis id (authenticated)', async () => {
+    const token = await signup(`missing_${Date.now()}@example.com`);
+    const { status } = await get('/api/history/nonexistent-id-12345', token);
+    assert.equal(status, 404);
+  });
+
+  test('owner can retrieve their own analysis by id', async () => {
+    const token = await signup(`owner_${Date.now()}@example.com`);
+    const res = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ type: 'text', content: 'Owner-only report content.' }),
+    });
+    const postBody = await res.json();
+    const id = postBody.id;
+    const { status, body } = await get(`/api/history/${id}`, token);
     assert.equal(status, 200);
     assert.equal(body.analysis.id, id);
     assert.ok(typeof body.analysis.riskScore === 'number');
+  });
+
+  test('a different authenticated user cannot read another user\'s analysis (IDOR)', async () => {
+    const ownerToken = await signup(`a_${Date.now()}@example.com`);
+    const res = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ownerToken}` },
+      body: JSON.stringify({ type: 'text', content: 'Private report for user A.' }),
+    });
+    const { id } = await res.json();
+
+    const attackerToken = await signup(`b_${Date.now()}@example.com`);
+    const { status } = await get(`/api/history/${id}`, attackerToken);
+    assert.equal(status, 404, 'another user must not be able to read the analysis');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/history/:id — ownership enforced
+// ---------------------------------------------------------------------------
+
+describe('DELETE /api/history/:id (ownership enforced)', () => {
+  const signup = (email) => signupVerified(email, 'Delete Tester');
+
+  test('unauthenticated delete is rejected (401)', async () => {
+    const res = await fetch(`${baseUrl}/api/history/whatever-id`, { method: 'DELETE' });
+    assert.equal(res.status, 401);
+  });
+
+  test('a user cannot delete another user\'s analysis', async () => {
+    const ownerToken = await signup(`del_owner_${Date.now()}@example.com`);
+    const created = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ownerToken}` },
+      body: JSON.stringify({ type: 'text', content: 'User A private analysis to protect.' }),
+    });
+    const { id } = await created.json();
+
+    // Attacker attempts delete — request "succeeds" (200) but must NOT remove the row.
+    const attackerToken = await signup(`del_attacker_${Date.now()}@example.com`);
+    await fetch(`${baseUrl}/api/history/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${attackerToken}` },
+    });
+
+    // Owner can still read it → it was not deleted by the attacker.
+    const { status } = await get(`/api/history/${id}`, ownerToken);
+    assert.equal(status, 200, "attacker must not have deleted the owner's analysis");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Email verification (clickable link) token lifecycle
+// ---------------------------------------------------------------------------
+
+describe('Email verification', () => {
+  test('signup creates an UNVERIFIED account and does not auto-login', async () => {
+    const { status, body } = await post('/api/auth/signup', {
+      email: `verify_${Date.now()}@example.com`,
+      password: 'longpassword123',
+      name: 'Verify Me',
+    });
+    assert.equal(status, 201);
+    assert.equal(body.requiresVerification, true);
+    assert.ok(!body.token, 'signup must not return a session token before verification');
+    assert.equal(body.user.emailVerified, false);
+  });
+
+  test('unverified user cannot log in with password (403 + requiresVerification)', async () => {
+    const email = `noverify_${Date.now()}@example.com`;
+    await post('/api/auth/signup', { email, password: 'longpassword123', name: 'No Verify' });
+    const { status, body } = await post('/api/auth/login', { email, password: 'longpassword123' });
+    assert.equal(status, 403);
+    assert.equal(body.requiresVerification, true);
+  });
+
+  test('valid token verifies email, is single-use, and issues a session token', async () => {
+    // Use the token service + db directly to obtain a raw token for a user.
+    const { issueVerificationToken } = await import('../src/auth/verification.js');
+    const { getUserByEmail } = await import('../src/db/db.js');
+    const email = `tok_${Date.now()}@example.com`;
+    await post('/api/auth/signup', { email, password: 'longpassword123', name: 'Token User' });
+    const user = await getUserByEmail(email);
+    const rawToken = await issueVerificationToken(user.id);
+
+    // First use → success + token.
+    const ok = await post('/api/auth/verify-email', { token: rawToken });
+    assert.equal(ok.status, 200);
+    assert.ok(ok.body.token, 'verify-email must return a session token on success');
+    assert.equal(ok.body.user.emailVerified, true);
+
+    // Reuse → rejected.
+    const reuse = await post('/api/auth/verify-email', { token: rawToken });
+    assert.equal(reuse.status, 400);
+    assert.equal(reuse.body.reason, 'used');
+
+    // Verified user can now log in.
+    const login = await post('/api/auth/login', { email, password: 'longpassword123' });
+    assert.equal(login.status, 200);
+    assert.ok(login.body.token);
+  });
+
+  test('invalid token is rejected', async () => {
+    const { status, body } = await post('/api/auth/verify-email', { token: 'not-a-real-token-value' });
+    assert.equal(status, 400);
+    assert.equal(body.reason, 'invalid');
+  });
+
+  test('resend-verification returns a generic response (no account enumeration)', async () => {
+    const real = await post('/api/auth/resend-verification', { email: `resend_${Date.now()}@example.com` });
+    assert.equal(real.status, 200);
+    assert.equal(real.body.ok, true);
+    // Same generic shape for an address with no account.
+    const none = await post('/api/auth/resend-verification', { email: 'definitely-not-registered@example.com' });
+    assert.equal(none.status, 200);
+    assert.equal(none.body.ok, true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Google OAuth — state validation (CSRF) and demo gating
+// ---------------------------------------------------------------------------
+
+describe('Google OAuth security', () => {
+  // Follow redirects manually so we can inspect the callback redirect target.
+  async function getNoRedirect(path) {
+    const res = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
+    return { status: res.status, location: res.headers.get('location') || '' };
+  }
+
+  test('callback with missing state redirects with google_state_invalid', async () => {
+    const { status, location } = await getNoRedirect('/api/auth/google/callback?code=fakecode');
+    assert.ok([301, 302, 303, 307, 308].includes(status), `expected a redirect, got ${status}`);
+    assert.ok(location.includes('error=google_state_invalid'), `expected state error, got: ${location}`);
+  });
+
+  test('callback with an unknown state redirects with google_state_invalid', async () => {
+    const { location } = await getNoRedirect('/api/auth/google/callback?code=fakecode&state=neverissued');
+    assert.ok(location.includes('error=google_state_invalid'), `expected state error, got: ${location}`);
+  });
+
+  test('demo Google sign-in works in non-production (test env)', async () => {
+    // DISABLE_RATE_LIMIT is set; NODE_ENV is not production in tests.
+    const { status, body } = await post('/api/auth/google/demo', {});
+    assert.equal(status, 200);
+    assert.ok(body.token, 'demo sign-in should return a token outside production');
+    assert.equal(body.demo, true);
   });
 });
 

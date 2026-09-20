@@ -45,6 +45,19 @@ export async function apiAnalyze(content: string, type: 'text' | 'url' = 'text')
   });
 }
 
+/**
+ * Analyze a URL through the dedicated endpoint.
+ * Unlike /api/analyze, /api/analyze/url ALWAYS runs the reputation-check flow
+ * and treats the input as a URL, so structural + reputation analysis are
+ * consistently applied.
+ */
+export async function apiAnalyzeUrl(url: string): Promise<{ analysis: AnalysisPayload }> {
+  return request('/api/analyze/url', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
 export async function apiAnalyzeImage(
   dataUrl: string,
   visibleText?: string,
@@ -86,8 +99,25 @@ export async function apiClearHistory(): Promise<{ ok: boolean }> {
   return request('/api/history', { method: 'DELETE' });
 }
 
-export async function apiSignup(name: string, email: string, password: string): Promise<{ token: string; user: AuthUser }> {
+export interface SignupResult {
+  ok: boolean;
+  requiresVerification: boolean;
+  delivered: boolean;
+  email: string;
+  user: AuthUser;
+  message: string;
+}
+
+export async function apiSignup(name: string, email: string, password: string): Promise<SignupResult> {
   return request('/api/auth/signup', { method: 'POST', body: JSON.stringify({ name, email, password }) });
+}
+
+export async function apiVerifyEmail(token: string): Promise<{ ok: boolean; token: string; user: AuthUser }> {
+  return request('/api/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) });
+}
+
+export async function apiResendVerification(email: string): Promise<{ ok: boolean; message: string }> {
+  return request('/api/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) });
 }
 
 export async function apiLogin(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
@@ -100,10 +130,6 @@ export async function apiMe(): Promise<{ user: AuthUser }> {
 
 export async function apiGoogleConfig(): Promise<{ enabled: boolean }> {
   return request('/api/auth/google/config');
-}
-
-export async function apiGoogleDemo(): Promise<{ token: string; user: AuthUser; demo: boolean }> {
-  return request('/api/auth/google/demo', { method: 'POST' });
 }
 
 export interface SendOtpResult {

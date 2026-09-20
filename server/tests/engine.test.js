@@ -250,3 +250,83 @@ describe('Confidence scoring', () => {
 });
 
 console.log('\n✓ All engine tests completed.\n');
+
+// ---------------------------------------------------------------------------
+// Detection quality — lookalike / typosquat / @-trick / card theft (Block: pro detection)
+// ---------------------------------------------------------------------------
+
+describe('URL impersonation detection', () => {
+  test('typosquat with digit-for-letter (paypa1) is flagged high', () => {
+    const r = analyzeUrl('https://paypa1.com/login', '');
+    assert.ok(r.riskScore >= 50, `paypa1 lookalike should score high, got ${r.riskScore}`);
+    assert.ok(
+      r.indicators.some((i) => /lookalike|typosquat/i.test(i.label)),
+      'should include a lookalike/typosquat indicator',
+    );
+  });
+
+  test('homoglyph domain (faceb00k) is detected', () => {
+    const r = analyzeUrl('https://faceb00k-security.com', '');
+    assert.ok(
+      r.indicators.some((i) => /lookalike|typosquat|brand/i.test(i.label)),
+      'faceb00k should trigger brand/typosquat detection',
+    );
+  });
+
+  test('brand name in untrusted domain (hbl-bank-verify.com) is flagged', () => {
+    const r = analyzeUrl('https://www.hbl-bank-verify.com/secure', '');
+    assert.ok(r.riskScore >= 45, `brand-in-untrusted-domain should score high, got ${r.riskScore}`);
+  });
+
+  test('deceptive @ in URL resolves to the real (evil) host and is flagged', () => {
+    const r = analyzeUrl('https://www.hbl.com@evil-phish.xyz/login', '');
+    assert.ok(r.riskScore >= 50, `@-trick should score high, got ${r.riskScore}`);
+    assert.ok(
+      r.indicators.some((i) => /@|deceptive/i.test(i.label)),
+      'should flag the deceptive @ trick',
+    );
+  });
+
+  test('IP-hosted login page is flagged high', () => {
+    const r = analyzeUrl('http://192.168.10.5/hbl/login', '');
+    assert.ok(r.riskScore >= 45, `IP-hosted login should score high, got ${r.riskScore}`);
+  });
+
+  test('official domains are NOT false-positived', () => {
+    for (const u of ['https://www.google.com', 'https://hbl.com', 'https://www.daraz.pk/x']) {
+      const r = analyzeUrl(u, '');
+      assert.ok(r.isTrusted === true || r.riskScore < 20, `${u} should be trusted/low, got ${r.riskScore}`);
+    }
+  });
+});
+
+describe('Credential / card theft detection', () => {
+  test('card + CVV request under a "blocked" threat is critical', () => {
+    const r = analyzeContent(
+      'Dear customer your Meezan debit card is blocked. Share card number and CVV to reactivate.',
+      'text',
+    );
+    assert.ok(r.riskScore >= 70, `card+CVV theft should be high/critical, got ${r.riskScore}`);
+  });
+
+  test('CVV request alone triggers a credential signal', () => {
+    const r = analyzeContent('Please share your CVV to confirm your identity.', 'text');
+    assert.ok(
+      r.reasons.some((x) => /credential|cnic/i.test(x.title)),
+      'CVV request should raise a credential signal',
+    );
+  });
+});
+
+describe('Legit messages stay low (false-positive guard)', () => {
+  for (const msg of [
+    'Hi, are we still on for lunch tomorrow at 1pm?',
+    'Your Amazon order has shipped and will arrive Thursday. Track it in the app.',
+    'Meeting notes are in the shared drive. Let me know if you need anything.',
+  ]) {
+    test(`"${msg.slice(0, 30)}..." scores low`, () => {
+      const r = analyzeContent(msg, 'text');
+      assert.ok(r.riskScore < 40, `legit message should be low risk, got ${r.riskScore}`);
+    });
+  }
+});

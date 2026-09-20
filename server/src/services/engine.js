@@ -65,7 +65,8 @@ const RE = {
 
   // Fear / Threats — Pakistani context
   fear: [
-    /your (account|card|wallet) (will be|has been) (blocked|suspended|locked)/i,
+    /your (account|card|wallet) (will be|has been|is|are|got) (blocked|suspended|locked|frozen|deactivated)/i,
+    /(account|card|wallet|sim).*(is|has been|will be).*(blocked|suspended|locked|frozen|deactivated)/i,
     /account.*(blocked|suspended|band|freeze)/i,
     /\bapka account band\b/i,             // "your account will be closed"
     /legal action/i,
@@ -97,6 +98,7 @@ const RE = {
     /\bBOK\b/,                            // Bank of Khyber
     /\bSME bank\b/i,
     /meezan bank/i,
+    /\bmeezan\b/i,
     /bank alfalah/i,
     /askari bank/i,
     /faysal bank/i,
@@ -202,7 +204,13 @@ const RE = {
     /\bnational id\b/i,
     /cnic share (karein|karo|bhejein)/i,
     /\bATM (pin|card)\b/i,
-    /\bdebit card (details|number|pin)\b/i,
+    /\b(debit|credit) card (details|number|pin)\b/i,
+    /\bcard number\b/i,                     // "share your card number"
+    /\bcvv\b/i,                             // CVV request is always credential theft
+    /\bcvc\b/i,
+    /card (number|details).*cvv|cvv.*card/i,
+    /(share|send|provide|enter|give).*(card|cvv|pin|otp|password)/i,
+    /(card|cvv|pin).*(reactivate|unlock|verify|confirm)/i,
   ],
 
   // OTP / verification code theft
@@ -351,8 +359,10 @@ const RE = {
     /delivery (failed|attempted|pending)/i,
     /\bparcel\b/i,
     /Daraz (delivery|parcel|order)/i,       // Daraz.pk (biggest PK e-commerce)
-    /customs (fee|duty|charge|charges)/i,
+    /customs (fee|duty|charge|charges|clearance)/i,
     /\bcustoms\b.*\bpay\b/i,
+    /clearance (fee|charge|charges)/i,      // "pay clearance fee"
+    /(pay|deposit).{0,20}(clearance|customs|delivery|shipping) fee/i,
     /shipping (fee|charge)/i,
     /tracking (id|number)/i,
     /TCS (parcel|delivery)/i,               // TCS courier Pakistan
@@ -578,19 +588,135 @@ const URL_IP_DOMAIN = /https?:\/\/\d{1,3}(\.\d{1,3}){3}/;
 const URL_IN_MESSAGE = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
 const URL_PUNYCODE = /xn--/i; // IDN homograph attack
 
+// ── Brand impersonation / typosquat detection ───────────────────────────────
+// Canonical brand tokens (the label a scammer imitates) mapped to the official
+// registrable domain. Used to catch lookalikes like paypa1.com, hbl-bank-verify.com,
+// faceb00k-security.com — where a trusted brand name appears in an untrusted domain.
+const BRAND_TOKENS = [
+  { token: 'hbl', domain: 'hbl.com' },
+  { token: 'mcb', domain: 'mcb.com.pk' },
+  { token: 'ubl', domain: 'ubl.com.pk' },
+  { token: 'meezan', domain: 'meezanbank.com' },
+  { token: 'alfalah', domain: 'bankalfalah.com' },
+  { token: 'askari', domain: 'askaribank.com.pk' },
+  { token: 'faysal', domain: 'faysalbank.com' },
+  { token: 'jazzcash', domain: 'jazzcash.com.pk' },
+  { token: 'easypaisa', domain: 'easypaisa.com.pk' },
+  { token: 'nayapay', domain: 'nayapay.com' },
+  { token: 'sadapay', domain: 'sadapay.com' },
+  { token: 'nadra', domain: 'nadra.gov.pk' },
+  { token: 'bisp', domain: 'bisp.gov.pk' },
+  { token: 'ehsaas', domain: 'ehsaas.gov.pk' },
+  { token: 'fbr', domain: 'fbr.gov.pk' },
+  { token: 'daraz', domain: 'daraz.pk' },
+  { token: 'telenor', domain: 'telenor.com.pk' },
+  { token: 'amazon', domain: 'amazon.com' },
+  { token: 'paypal', domain: 'paypal.com' },
+  { token: 'google', domain: 'google.com' },
+  { token: 'microsoft', domain: 'microsoft.com' },
+  { token: 'apple', domain: 'apple.com' },
+  { token: 'facebook', domain: 'facebook.com' },
+  { token: 'instagram', domain: 'instagram.com' },
+  { token: 'whatsapp', domain: 'whatsapp.com' },
+  { token: 'netflix', domain: 'netflix.com' },
+];
+
+// Normalise common homoglyph substitutions used in typosquats
+// (0→o, 1→l/i, 3→e, 5→s, $→s, @→a, vv→w) so faceb00k ~ facebook, paypa1 ~ paypal.
+function deHomoglyph(s) {
+  return s
+    .toLowerCase()
+    .replace(/0/g, 'o')
+    .replace(/1/g, 'l')
+    .replace(/3/g, 'e')
+    .replace(/5/g, 's')
+    .replace(/\$/g, 's')
+    .replace(/vv/g, 'w');
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Detect brand impersonation in a hostname that is NOT the official domain:
+ *   - exact brand token embedded as a label (hbl-bank-verify.com contains "hbl")
+ *   - homoglyph/typo lookalike of a brand token (paypa1, faceb00k) via edit distance
+ * Returns { brand, domain, kind } or null.
+ */
+function detectBrandImpersonation(host) {
+  const rootDomain = host.replace(/^www\./, '');
+  const labels = rootDomain.split('.');
+  // Compare each domain label against each known brand token.
+  for (const label of labels) {
+    const rawLabel = label.toLowerCase();
+    const norm = deHomoglyph(rawLabel.replace(/[^a-z0-9]/gi, ''));
+    for (const { token, domain } of BRAND_TOKENS) {
+      if (!norm) continue;
+      // Exact brand token present as/within a label of a non-official domain.
+      if (rawLabel.includes(token)) {
+        return { brand: token, domain, kind: 'embedded' };
+      }
+      if (token.length >= 4) {
+        // Homoglyph disguise: after normalising 0→o, 1→l, etc. the label matches
+        // (or nearly matches) the brand, but the RAW label differed — i.e. it used
+        // look-alike characters on purpose (faceb00k → facebook, paypa1 → paypal).
+        const normContainsToken = norm.includes(token) && !rawLabel.includes(token);
+        const d = levenshtein(norm, token);
+        const nearMiss = d >= 1 && d <= 2 && Math.abs(norm.length - token.length) <= 2;
+        if (normContainsToken || nearMiss) {
+          return { brand: token, domain, kind: 'typosquat' };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function analyzeUrl(url, context = '') {
   const indicators = [];
   let score = 0;
   let clean = url.trim().replace(/[.,;'"!)\]>]+$/, '');
   const add = (label, status, detail) => indicators.push({ label, status, detail });
 
+  // ── Scheme normalization ──────────────────────────────────────────────────
+  // A URL without an explicit http(s):// scheme (e.g. "www.hbl-verify.xyz/login"
+  // or "example.com/verify") must NOT short-circuit the analysis. Previously a
+  // missing scheme returned early with only a protocol flag, so scam-domain,
+  // suspicious-TLD, IP and brand-mismatch checks never ran. We now normalize a
+  // domain-like input to https:// and continue the full analysis, while still
+  // recording that the original omitted the scheme.
+  let schemeWasMissing = false;
   if (!/^https?:\/\//i.test(clean)) {
-    add('Protocol', 'danger', 'No valid http(s) protocol detected — link should not be trusted.');
-    score += 35;
-    return { url: clean, indicators, riskScore: score };
+    // Reject inputs that are clearly not a hostname (no dot in the first token,
+    // or contains whitespace) — those genuinely aren't links.
+    const firstToken = clean.split(/[/?#]/)[0];
+    const looksLikeDomain = /^[a-z0-9]([a-z0-9-]*\.)+[a-z]{2,}(:\d+)?$/i.test(firstToken);
+    if (!looksLikeDomain) {
+      add('Protocol', 'danger', 'This does not look like a valid web address — it should not be trusted.');
+      score += 35;
+      return { url: clean, indicators, riskScore: score };
+    }
+    schemeWasMissing = true;
+    clean = `https://${clean}`;
+    add('Missing URL Scheme', 'warning', 'The link was provided without http:// or https://. It has been normalized for analysis, but a missing scheme in an unsolicited link is itself a mild red flag.');
+    score += 4;
   }
 
-  const isHttps = /^https:\/\//i.test(clean);
+  // A URL is only credited as HTTPS when the original input explicitly used it.
+  // A scheme normalized in from nothing does not prove transport security.
+  const isHttps = !schemeWasMissing && /^https:\/\//i.test(clean);
   let parsedUrl;
   try { parsedUrl = new URL(clean); } catch { parsedUrl = null; }
 
@@ -616,6 +742,26 @@ export function analyzeUrl(url, context = '') {
     score += 45;
   }
 
+  // ── Embedded credentials / "@" host-spoofing trick ────────────────────────
+  // In http://real-brand.com@evil.com/... the browser ignores everything before
+  // "@" and goes to evil.com. A classic phishing disguise.
+  if (parsedUrl && (parsedUrl.username || parsedUrl.password || /^[^/]*@/.test(clean.replace(/^https?:\/\//i, '')))) {
+    add('Deceptive "@" in URL', 'danger', `This link uses an "@" so the part you see ("${clean.replace(/^https?:\/\//i, '').split('@')[0].slice(0, 40)}") is ignored — the browser actually goes to "${host}". This is a deliberate disguise.`);
+    score += 55;
+  }
+
+  // ── Brand impersonation / typosquat (lookalike domains) ───────────────────
+  const impersonation = detectBrandImpersonation(host);
+  if (impersonation) {
+    if (impersonation.kind === 'typosquat') {
+      add('Lookalike / Typosquat Domain', 'danger', `"${rootDomain}" is a lookalike of the "${impersonation.brand.toUpperCase()}" brand (official: ${impersonation.domain}). Character-swap lookalikes (e.g. 0 for o, 1 for l) are a top phishing tactic.`);
+      score += 55;
+    } else {
+      add('Brand Name in Untrusted Domain', 'danger', `"${rootDomain}" puts the "${impersonation.brand.toUpperCase()}" brand in a domain that is NOT its official address (${impersonation.domain}). Legitimate services do not host logins on look-alike domains.`);
+      score += 45;
+    }
+  }
+
   // ── Punycode / IDN homograph attack ──────────────────────────────────────
   if (URL_PUNYCODE.test(host)) {
     add('Punycode / IDN Domain', 'danger', 'Punycode encoding (xn--) is used to create lookalike domains that are visually identical to legitimate brands.');
@@ -631,7 +777,7 @@ export function analyzeUrl(url, context = '') {
   // ── IP address hosting ────────────────────────────────────────────────────
   if (URL_IP_DOMAIN.test(clean)) {
     add('IP Address Hosting', 'danger', 'Domain is a raw IP address — legitimate services use domain names, not bare IPs. This is common in phishing infrastructure.');
-    score += 35;
+    score += 45;
   }
 
   // ── URL shortener ─────────────────────────────────────────────────────────
@@ -826,9 +972,13 @@ export function analyzeContent(content, type = 'text') {
   combo('urgency', 'reward', 6);
   combo('fear', 'urgency', 8);
   combo('credential', 'suspiciousLink', 10);
+  combo('credential', 'fear', 14);       // "card blocked → share CVV" = account takeover
+  combo('credential', 'authority', 12);  // impersonated bank asking for card/CVV/PIN
   combo('otp', 'fear', 10);
   combo('payment', 'fear', 8);
-  combo('employment', 'payment', 8);
+  combo('employment', 'payment', 12);    // fake job + upfront fee = classic advance-fee
+  combo('delivery', 'payment', 14);      // parcel held + pay a fee
+  combo('delivery', 'suspiciousLink', 12); // fake courier link
   combo('investment', 'tooGood', 10);
   combo('nadra', 'authority', 15);       // CNIC + authority = very dangerous
   combo('nadra', 'fear', 12);            // CNIC theft under threat
@@ -843,7 +993,12 @@ export function analyzeContent(content, type = 'text') {
 
   const maxUrlRisk = urlScores.length ? Math.max(...urlScores) : 0;
   if (type === 'url' && maxUrlRisk > 0) {
-    riskScore = Math.min(98, Math.max(riskScore, Math.round(riskScore * 0.35 + maxUrlRisk * 0.65)));
+    // For dedicated URL analysis the link's own structural risk should dominate.
+    // Blend with any text signals, but never let a structurally dangerous URL be
+    // reported as low: floor the score near the URL's own risk (capped at 98).
+    const blended = Math.round(riskScore * 0.3 + maxUrlRisk * 0.7);
+    const urlFloor = Math.min(98, Math.round(maxUrlRisk * 0.95));
+    riskScore = Math.min(98, Math.max(riskScore, blended, urlFloor));
     if (maxUrlRisk >= 40 && categoryId === 'unknown') categoryId = 'phishing';
     const textSignals = detected.filter((d) => d !== 'suspiciousLink' && d !== 'grammar');
     if (maxUrlRisk < 40 && categoryId === 'impersonation' && textSignals.length <= 1) categoryId = 'unknown';
@@ -989,7 +1144,7 @@ export function analyzeContent(content, type = 'text') {
   if (P('payment') || P('tooGood') || P('reward')) recommendedActions.push("Any request for upfront payment to receive a prize or job offer is a scam.");
   if (P('employment')) recommendedActions.push("Legitimate employers never charge registration or training fees before employment.");
   if (categoryId === 'delivery_scam') recommendedActions.push("Track your parcel on the courier's official website — not through the link provided.");
-  if (riskScore >= 60) recommendedActions.push("Report this message to your telecom provider (forward to 1909 in India) or local cybercrime portal.");
+  if (riskScore >= 60) recommendedActions.push("Report this to Pakistan's FIA Cybercrime Wing (NR3C) via complaint.fia.gov.pk, and report spam SMS/calls to the PTA using their official complaint channels.");
   if (P('credential') || P('otp')) recommendedActions.push("If you already shared credentials, change your passwords immediately and enable 2FA.");
   if (P('payment') && riskScore >= 60) recommendedActions.push("If payment was already made, contact your bank immediately to dispute the transaction.");
   recommendedActions.push("Block and report the sender on the platform where you received this message.");

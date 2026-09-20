@@ -6,7 +6,7 @@ import { GlassCard } from '../components/ui/primitives';
 const PILLARS = [
   { icon: Target, title: 'Clarity over alarm', desc: 'A red score means nothing without a reason. We explain what was seen and how much we can actually infer from it.' },
   { icon: HeartHandshake, title: 'For everyday people', desc: 'The person receiving a forwarded scam should understand it — not just security analysts.' },
-  { icon: Lock, title: 'Privacy by default', desc: 'No raw messages stored, no scraping of your links, no harvesting of secrets. Analysis happens with respect for your data.' },
+  { icon: Lock, title: 'Privacy by default', desc: 'We keep only a short summary and the report — not your full message. No scraping of your links, no harvesting of secrets. Analysis happens with respect for your data.' },
 ];
 
 const PIPELINE = [

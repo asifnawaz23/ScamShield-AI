@@ -12,18 +12,46 @@ const STAGE_LOG: Record<Exclude<ScanStage, 'idle' | 'complete'>, string> = {
   explanation: 'Assembling explainable reasoning...',
 };
 
+type BannerTone = 'green' | 'yellow' | 'orange' | 'red';
+
+// Map a 0–100 risk score to the banner tone so a SAFE result is not shown in
+// alarming red. Kept in sync with the engine's risk tiers.
+export function toneForScore(score: number): BannerTone {
+  if (score >= 80) return 'red';
+  if (score >= 60) return 'orange';
+  if (score >= 40) return 'yellow';
+  return 'green';
+}
+
+const BANNER_STYLES: Record<BannerTone, { box: string; label: string }> = {
+  green: { box: 'border-risk-green/30 bg-risk-green/10', label: 'text-risk-green' },
+  yellow: { box: 'border-risk-yellow/30 bg-risk-yellow/10', label: 'text-risk-yellow' },
+  orange: { box: 'border-risk-orange/30 bg-risk-orange/10', label: 'text-risk-orange' },
+  red: { box: 'border-risk-red/30 bg-risk-red/10', label: 'text-risk-red' },
+};
+
+const BANNER_HEADING: Record<BannerTone, string> = {
+  green: 'Analysis complete',
+  yellow: 'Analysis complete — caution advised',
+  orange: 'High-risk indicators detected',
+  red: 'Critical threat indicators detected',
+};
+
 export function ScanOverlay({
   visible,
   stage,
   done,
   resultLine,
+  tone = 'red',
 }: {
   visible: boolean;
   stage: number;
   done: boolean;
   resultLine: string | null;
+  tone?: BannerTone;
 }) {
   const progress = done ? 100 : Math.min(92, Math.round((stage / 6) * 95));
+  const banner = BANNER_STYLES[tone];
 
   const stages = ['initializing', 'extracting', 'language', 'links', 'manipulation', 'explanation'] as const;
   const shown = stages.slice(0, Math.max(1, stage - 1));
@@ -105,12 +133,12 @@ export function ScanOverlay({
               <AnimatePresence>
                 {done && resultLine && (
                   <motion.div
-                    className="mt-6 rounded-2xl border border-risk-red/30 bg-risk-red/10 px-5 py-4"
+                    className={cx('mt-6 rounded-2xl border px-5 py-4', banner.box)}
                     initial={{ opacity: 0, y: 12, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
                   >
-                    <p className="font-mono text-[11px] tracking-[0.3em] text-risk-red uppercase">Threat assessment complete</p>
+                    <p className={cx('font-mono text-[11px] tracking-[0.3em] uppercase', banner.label)}>{BANNER_HEADING[tone]}</p>
                     <p className="mt-2 font-display text-2xl font-bold tracking-tight text-white">{resultLine}</p>
                   </motion.div>
                 )}

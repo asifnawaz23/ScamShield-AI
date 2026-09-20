@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, ChartPie, Activity, Trophy, Crosshair, LogOut, AlertTriangle } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -8,7 +8,7 @@ import {
 import { GlassCard, Badge, SectionLabel } from '../components/ui/primitives';
 import { useAuth } from '../context/AuthContext';
 import { apiHistory } from '../lib/api';
-import { riskToneForScore } from '../lib/utils';
+import { riskToneForScore, categoryLabel } from '../lib/utils';
 import type { HistoryItem } from '../types';
 
 const TIER_COLORS: Record<string, string> = {
@@ -42,6 +42,11 @@ function tooltipStyle() {
 
 export function Dashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const signOut = () => {
+    logout();
+    navigate('/', { replace: true });
+  };
   const [items, setItems] = useState<HistoryItem[] | null>(null);
 
   useEffect(() => {
@@ -63,14 +68,14 @@ export function Dashboard() {
     const buckets: Record<string, number> = {};
     for (const x of safeItems) buckets[x.category] = (buckets[x.category] || 0) + 1;
     const top = Object.entries(buckets).sort((a, b) => b[1] - a[1])[0];
-    return { total, high, avg, top: top ? top[0] : null, topCount: top ? top[1] : 0 };
+    return { total, high, avg, top: top ? categoryLabel(top[0]) : null, topCount: top ? top[1] : 0 };
   }, [safeItems]);
 
   const categoryData = useMemo(() => {
     const buckets: Record<string, number> = {};
     for (const x of safeItems) buckets[x.category] = (buckets[x.category] || 0) + 1;
     return Object.entries(buckets)
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, count]) => ({ name: categoryLabel(name), count }))
       .sort((a, b) => b.count - a.count);
   }, [safeItems]);
 
@@ -118,7 +123,7 @@ export function Dashboard() {
         <div className="flex items-center gap-3">
           <Badge tone="green">Signed in</Badge>
           <button
-            onClick={logout}
+            onClick={signOut}
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-white/10"
           >
             <LogOut className="size-4" aria-hidden="true" />
@@ -226,7 +231,7 @@ export function Dashboard() {
                       {item.inputSummary}
                     </Link>
                     <span className="font-mono text-xs text-white/70">{item.riskScore}</span>
-                    <span className="hidden text-xs text-slate-500 sm:block">{item.category}</span>
+                    <span className="hidden text-xs text-slate-500 sm:block">{categoryLabel(item.category)}</span>
                   </li>
                 ))}
               </ul>

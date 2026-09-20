@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MailCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { MailCheck, ArrowLeft, ShieldCheck, LayoutDashboard, Home } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthShell } from '../components/auth/AuthShell';
 import { GoogleButton } from '../components/auth/GoogleButton';
@@ -10,7 +10,7 @@ import { Button, Spinner } from '../components/ui/primitives';
 import { cx } from '../lib/utils';
 
 export function Signup() {
-  const { sendSignupOtp, verifyOtp, openGoogleLogin, loginWithGoogleDemo, googleEnabled } = useAuth();
+  const { user, sendSignupOtp, verifyOtp, openGoogleLogin, googleEnabled } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
   const from = location.state?.from || '/dashboard';
@@ -135,12 +135,28 @@ export function Signup() {
           : 'Sign up and connect every analysis to your dashboard.'
       }
       footer={
-        <p className="text-center text-sm text-slate-400">
-          Already have an account?{' '}
-          <Link className="font-semibold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/login">
-            Sign in
-          </Link>
-        </p>
+        <div className="space-y-3">
+          <p className="text-center text-sm text-slate-400">
+            Already have an account?{' '}
+            <Link className="font-semibold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/login">
+              Sign in
+            </Link>
+          </p>
+          <div className="flex items-center justify-center gap-4 border-t border-white/10 pt-3 text-xs text-slate-500">
+            <Link
+              to={user ? '/dashboard' : '/login'}
+              className="inline-flex items-center gap-1.5 transition hover:text-white"
+            >
+              <LayoutDashboard className="size-3.5" aria-hidden="true" />
+              Return to Dashboard
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link to="/" className="inline-flex items-center gap-1.5 transition hover:text-white">
+              <Home className="size-3.5" aria-hidden="true" />
+              Go to Landing Page
+            </Link>
+          </div>
+        </div>
       }
     >
       {otpStep ? (
@@ -217,26 +233,6 @@ export function Signup() {
               loading={googleBusy}
             />
           )}
-
-          <GoogleButton
-            demo
-            label="Sign up with Google (Demo)"
-            onClick={async () => {
-              setGoogleBusy(true);
-              setError(null);
-              try {
-                await loginWithGoogleDemo();
-                navigate(from, { replace: true });
-              } catch {
-                setError('Demo Google sign-up failed. Please try again.');
-              } finally {
-                setGoogleBusy(false);
-              }
-            }}
-            loading={googleBusy}
-            disabled={googleBusy}
-          />
-          <div className="sr-only">Demo sign-up creates a sample account and never contacts Google.</div>
 
           <div className="flex items-center gap-3" aria-hidden="true">
             <span className="h-px flex-1 bg-white/10" />

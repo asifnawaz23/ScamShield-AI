@@ -1,23 +1,13 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { analyzeWithFallback, analyzeImageWithFallback } from '../ai/provider.js';
+import { analyzeContent } from '../services/engine.js';
 import { sanitizeText, analyzeLimiter, imageLimiter, validateType, isValidDataUrl } from '../middleware/security.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { saveAnalysis } from '../db/db.js';
-import { checkReputation, isReputationConfigured } from '../services/reputation.js';
+import { checkReputation } from '../services/reputation.js';
 
 export const analyzeRouter = Router();
-
-function buildMeta({ type, inputSummary, mode, aiUsed, visualSource }) {
-  return {
-    type,
-    inputSummary,
-    mode,
-    aiUsed,
-    visualSource,
-    sampleLabel: mode === 'demo' ? 'Demo Mode' : 'Live AI',
-  };
-}
 
 /**
  * Extract URLs from text content for reputation checking.
@@ -90,7 +80,7 @@ analyzeRouter.post('/analyze', analyzeLimiter, optionalAuth, async (req, res, ne
       reputationResult,
       limitations: buildLimitations(type === 'demo' ? 'text' : type, Boolean(reputationResult), aiUsed),
     };
-    saveAnalysis(payload, req.user?.id);
+    await saveAnalysis(payload, req.user?.id);
     res.json({ ok: true, id, analysis: payload, mode, aiUsed, aiError: aiError || null });
   } catch (err) {
     next(err);
@@ -124,7 +114,7 @@ analyzeRouter.post('/analyze/url', analyzeLimiter, optionalAuth, async (req, res
       reputationResult,
       limitations: buildLimitations('url', Boolean(reputationResult), aiUsed),
     };
-    saveAnalysis(payload, req.user?.id);
+    await saveAnalysis(payload, req.user?.id);
     res.json({ ok: true, id, analysis: payload, mode, aiUsed, aiError: aiError || null });
   } catch (err) {
     next(err);
@@ -163,7 +153,7 @@ analyzeRouter.post('/analyze/image', imageLimiter, optionalAuth, async (req, res
       reputationResult,
       limitations: buildLimitations('image', Boolean(reputationResult), aiUsed),
     };
-    saveAnalysis(payload, req.user?.id);
+    await saveAnalysis(payload, req.user?.id);
     res.json({ ok: true, id, analysis: payload, mode, aiUsed });
   } catch (err) {
     next(err);
@@ -174,10 +164,11 @@ analyzeRouter.post('/generate-safe-reply', analyzeLimiter, async (req, res, next
   try {
     const content = sanitizeText(req.body?.content);
     const category = sanitizeText(req.body?.category);
-    const { result } = await analyzeWithFallback({
-      content: content || category || 'a suspicious message',
-      type: 'text',
-    });
+    // The safe reply is deterministic and does not depend on the AI layer, so
+    // run only the heuristic engine here — no LLM call, no reputation lookup.
+    // This avoids a wasteful (and potentially paid) round-trip just to return
+    // a fixed, safe response.
+    const result = analyzeContent(content || category || 'a suspicious message', 'text');
     res.json({ ok: true, safeReply: result.safeReply });
   } catch (err) {
     next(err);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MailCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { MailCheck, ArrowLeft, ShieldCheck, LayoutDashboard, Home } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthShell } from '../components/auth/AuthShell';
 import { GoogleButton } from '../components/auth/GoogleButton';
@@ -12,10 +12,12 @@ import { cx } from '../lib/utils';
 type Method = 'code' | 'password';
 
 export function Login() {
-  const { user, login, sendOtp, verifyOtp, openGoogleLogin, loginWithGoogleDemo, googleEnabled } = useAuth();
+  const { user, login, sendOtp, verifyOtp, openGoogleLogin, googleEnabled, resendVerification } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
   const from = location.state?.from || '/dashboard';
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendInfo, setResendInfo] = useState<string | null>(null);
 
   const [method, setMethod] = useState<Method>('code');
   const [email, setEmail] = useState('');
@@ -118,6 +120,8 @@ export function Login() {
   const submitPassword = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setResendInfo(null);
+    setNeedsVerification(false);
     if (!validEmail(email) || !password) {
       setError('Please enter your email and password.');
       return;
@@ -127,9 +131,26 @@ export function Login() {
       await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sign in. Please try again.');
+      const status = (err as { status?: number })?.status;
+      if (status === 403) {
+        // Unverified email account — offer a resend affordance.
+        setNeedsVerification(true);
+        setError('Please verify your email before signing in. Check your inbox for the verification link.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Could not sign in. Please try again.');
+      }
     } finally {
       setPasswordBusy(false);
+    }
+  };
+
+  const resendVerifyEmail = async () => {
+    setResendInfo(null);
+    try {
+      const r = await resendVerification(email.trim());
+      setResendInfo(r.message);
+    } catch {
+      setResendInfo('Could not resend right now. Please try again shortly.');
     }
   };
 
@@ -142,12 +163,28 @@ export function Login() {
           : 'Sign in to access your dashboard, history and connected analyses.'
       }
       footer={
-        <p className="text-center text-sm text-slate-400">
-          New to ScamShield AI?{' '}
-          <Link className="font-semibold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/signup">
-            Create an account
-          </Link>
-        </p>
+        <div className="space-y-3">
+          <p className="text-center text-sm text-slate-400">
+            New to ScamShield AI?{' '}
+            <Link className="font-semibold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/signup">
+              Create an account
+            </Link>
+          </p>
+          <div className="flex items-center justify-center gap-4 border-t border-white/10 pt-3 text-xs text-slate-500">
+            <Link
+              to={user ? '/dashboard' : '/login'}
+              className="inline-flex items-center gap-1.5 transition hover:text-white"
+            >
+              <LayoutDashboard className="size-3.5" aria-hidden="true" />
+              Return to Dashboard
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link to="/" className="inline-flex items-center gap-1.5 transition hover:text-white">
+              <Home className="size-3.5" aria-hidden="true" />
+              Go to Landing Page
+            </Link>
+          </div>
+        </div>
       }
     >
       {otpStep ? (
@@ -224,28 +261,6 @@ export function Login() {
               loading={googleBusy}
             />
           )}
-
-          <GoogleButton
-            demo
-            label="Continue with Google (Demo)"
-            onClick={async () => {
-              setGoogleBusy(true);
-              setError(null);
-              try {
-                await loginWithGoogleDemo();
-                navigate(from, { replace: true });
-              } catch {
-                setError('Demo Google sign-in failed. Please try again.');
-              } finally {
-                setGoogleBusy(false);
-              }
-            }}
-            loading={googleBusy}
-            disabled={googleBusy}
-          />
-          <div id="google-input-hint" className="sr-only">
-            Demo sign-in creates a sample account and never contacts Google.
-          </div>
 
           <div className="flex items-center gap-3" aria-hidden="true">
             <span className="h-px flex-1 bg-white/10" />
@@ -330,6 +345,18 @@ export function Login() {
                 <p role="alert" className="rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-2 text-sm text-risk-red">
                   {error}
                 </p>
+              )}
+              {needsVerification && (
+                <div className="rounded-lg border border-accent/25 bg-accent/5 px-3 py-2 text-sm text-slate-300">
+                  <button
+                    type="button"
+                    onClick={resendVerifyEmail}
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    Resend verification email
+                  </button>
+                  {resendInfo && <p className="mt-1 text-xs text-slate-400">{resendInfo}</p>}
+                </div>
               )}
               <Button type="submit" disabled={passwordBusy} className="w-full">
                 {passwordBusy ? <Spinner className="size-4" /> : null}
