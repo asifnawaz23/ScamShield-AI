@@ -45,3 +45,6 @@ coverage
 
 demo-work/
 
+
+# Local Netlify folder
+.netlify
