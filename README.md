@@ -252,6 +252,7 @@ The specs reflect the genuine development process — not retroactive documentat
 **Muhammad Asif Nawaz** — Full-Stack Developer · AI Enthusiast
 
 [![GitHub](https://img.shields.io/badge/GitHub-asifnawaz23-06b6d4?style=for-the-badge&logo=github&logoColor=white&labelColor=0f172a)](https://github.com/asifnawaz23)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Muhammad_Asif_Nawaz-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white&labelColor=0f172a)](https://www.linkedin.com/in/muhammad-asif-nawaz-)
 [![Email](https://img.shields.io/badge/Email-masifnawaz815@gmail.com-7c3aed?style=for-the-badge&logo=gmail&logoColor=white&labelColor=0f172a)](mailto:masifnawaz815@gmail.com)
 
 ---
