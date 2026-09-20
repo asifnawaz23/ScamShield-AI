@@ -8,7 +8,10 @@
   publish = "client/dist"
 
 [build.environment]
-  NODE_VERSION = "22"
+  # Node 20 LTS: ships a stable npm. Node 22's bundled npm can crash on Netlify
+  # with "Exit handler never called!" during install. The app no longer needs
+  # node:sqlite (migrated to @libsql/client), so 20 is fully supported.
+  NODE_VERSION = "20"
   # Ensure npm installs devDependencies during the build even if NODE_ENV=production.
   NPM_FLAGS = "--include=dev"
 
